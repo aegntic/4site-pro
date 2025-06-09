@@ -1,0 +1,103 @@
+{
+  "name": "project4site",
+  "version": "0.1.0",
+  "description": "AI-Powered Presentation Intelligence Platform - Transform GitHub repositories into professional multimedia experiences (project foresight)",
+  "private": true,
+  "author": {
+    "name": "Aegntic Foundation",
+    "email": "contact@aegntic.ai",
+    "url": "https://aegntic.ai"
+  },
+  "license": "SEE LICENSE IN LICENSE",
+  "homepage": "https://github.com/aegntic-foundation/project4site",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aegntic-foundation/project4site.git"
+  },
+  "bugs": {
+    "url": "https://github.com/aegntic-foundation/project4site/issues",
+    "email": "contact@aegntic.ai"
+  },
+  "keywords": [
+    "ai",
+    "automation",
+    "website-builder",
+    "github",
+    "developer-tools",
+    "presentation",
+    "video-generation",
+    "commission-system",
+    "developer-ecosystem",
+    "project4site",
+    "p4s",
+    "project-foresight"
+  ],
+  "engines": {
+    "node": ">=18.0.0",
+    "bun": ">=1.0.0"
+  },
+  "scripts": {
+    "dev": "bun run dev:all",
+    "dev:all": "concurrently \"bun run dev:app\" \"bun run dev:api\" \"bun run dev:github-app\"",
+    "dev:app": "next dev",
+    "dev:api": "bun run --watch src/api/server.ts",
+    "dev:github-app": "bun run --watch src/github-app/webhook-server.ts",
+    "build": "bun run build:all",
+    "build:all": "bun run build:app && bun run build:api",
+    "build:app": "next build",
+    "build:api": "bun build src/api/server.ts --outdir dist --target node",
+    "start": "next start",
+    "test": "bun test",
+    "test:watch": "bun test --watch",
+    "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
+    "lint:fix": "eslint . --ext .ts,.tsx,.js,.jsx --fix",
+    "type-check": "tsc --noEmit",
+    "setup": "bun run setup:env && bun run setup:db",
+    "setup:env": "cp .env.example .env",
+    "setup:db": "bun run db:migrate && bun run db:seed",
+    "db:migrate": "drizzle-kit migrate",
+    "db:seed": "bun run src/db/seed.ts",
+    "db:reset": "bun run src/db/reset.ts",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "^0.0.66",
+    "@anthropic-ai/sdk": "^0.30.1",
+    "@octokit/webhooks": "^13.2.7",
+    "@supabase/supabase-js": "^2.39.3",
+    "@vercel/analytics": "^1.1.1",
+    "ai": "^3.4.32",
+    "drizzle-orm": "^0.33.0",
+    "fastify": "^4.26.2",
+    "next": "^14.1.0",
+    "postgres": "^3.4.3",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "stripe": "^14.21.0",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.3.3",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.17",
+    "@types/react": "^18.2.55",
+    "@types/react-dom": "^18.2.19",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "concurrently": "^8.2.2",
+    "drizzle-kit": "^0.24.2",
+    "eslint": "^8.56.0",
+    "eslint-config-next": "^14.1.0",
+    "prettier": "^3.2.5"
+  },
+  "optionalDependencies": {
+    "@biomejs/biome": "^1.5.3"
+  },
+  "funding": {
+    "type": "individual",
+    "url": "https://aegntic.foundation"
+  },
+  "copyright": "© 2025 Aegntic Foundation. All rights reserved.",
+  "trademark": "project4site and p4s are trademarks of Aegntic Foundation"
+}
