@@ -1,0 +1,118 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Project4Site MVP</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="icon" href="/favicon.ico" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              DEFAULT: 'hsl(210, 40%, 50%)',
+              foreground: 'hsl(210, 40%, 98%)',
+              dark: 'hsl(210, 40%, 40%)',
+            },
+            secondary: {
+              DEFAULT: 'hsl(180, 50%, 50%)',
+              foreground: 'hsl(180, 50%, 5%)',
+            },
+            background: 'hsl(0, 0%, 100%)',
+            foreground: 'hsl(215, 25%, 27%)',
+            muted: {
+              DEFAULT: 'hsl(210, 40%, 96.1%)',
+              foreground: 'hsl(215.4, 16.3%, 46.9%)',
+            },
+            card: {
+              DEFAULT: 'hsl(0, 0%, 100%)',
+              foreground: 'hsl(215, 25%, 27%)',
+            },
+            accent: {
+              DEFAULT: 'hsl(47.9,95.8%,53.1%)', /* A vibrant yellow for accents */
+              foreground: 'hsl(48,95.8%,10%)',
+            },
+            destructive: {
+              DEFAULT: 'hsl(0, 84.2%, 60.2%)',
+              foreground: 'hsl(0, 0%, 98%)',
+            },
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'], // Example: Using Inter
+          },
+          keyframes: {
+            fadeIn: {
+              '0%': { opacity: '0' },
+              '100%': { opacity: '1' },
+            },
+            slideInUp: {
+              '0%': { transform: 'translateY(20px)', opacity: '0'},
+              '100%': { transform: 'translateY(0)', opacity: '1'}
+            }
+          },
+          animation: {
+            fadeIn: 'fadeIn 0.5s ease-out',
+            slideInUp: 'slideInUp 0.5s ease-out forwards',
+          }
+        },
+      },
+      plugins: [
+        function({ addComponents, theme }) {
+          addComponents({
+            '.prose': {
+              'h1': { color: theme('colors.foreground') },
+              'h2': { color: theme('colors.foreground') },
+              'h3': { color: theme('colors.foreground') },
+              'p': { color: theme('colors.muted.foreground') },
+              'strong': { color: theme('colors.foreground') },
+              'a': { color: theme('colors.primary.DEFAULT'), '&:hover': { color: theme('colors.primary.dark') } },
+              'code': { backgroundColor: theme('colors.muted.DEFAULT'), color: theme('colors.primary.dark'), padding: '0.2em 0.4em', borderRadius: '0.25rem', fontSize: '0.9em'},
+              'pre': { backgroundColor: theme('colors.gray.800'), color: theme('colors.gray.100'), padding: theme('spacing.4'), borderRadius: theme('spacing.md'), overflowX: 'auto' },
+              'pre code': { backgroundColor: 'transparent', color: 'inherit', padding: '0', fontSize: '1em' },
+              'blockquote': { borderLeftColor: theme('colors.primary.DEFAULT') },
+              'ul > li::before': { backgroundColor: theme('colors.primary.DEFAULT') },
+            }
+          })
+        } // Removed comma here
+        // require('@tailwindcss/typography'), // This line was causing the error
+      ]
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    .prose code:not(pre code) { 
+      font-family: 'Roboto Mono', monospace;
+    }
+    .prose pre code {
+      font-family: 'Roboto Mono', monospace;
+    }
+  </style>
+<script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.1.0/",
+    "react": "https://esm.sh/react@^19.1.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.1.0/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.4.0",
+    "marked": "https://esm.sh/marked@^15.0.12",
+    "next/": "https://esm.sh/next@^15.3.3/",
+    "lucide-react": "https://esm.sh/lucide-react@^0.513.0",
+    "framer-motion": "https://esm.sh/framer-motion@^12.16.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body class="bg-background text-foreground antialiased">
+  <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>
