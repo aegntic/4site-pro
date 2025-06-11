@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SiteData } from '../../types';
 import { TechProjectTemplate } from '../templates/TechProjectTemplate';
 // import { CreativeProjectTemplate } from '../templates/CreativeProjectTemplate'; // Placeholder for future
@@ -17,7 +17,24 @@ interface SitePreviewProps {
 
 export const SitePreview: React.FC<SitePreviewProps> = ({ siteData, onReset, error }) => {
   const [showShareOptions, setShowShareOptions] = useState(false);
+  const [heroImageLoaded, setHeroImageLoaded] = useState(false);
+  const [heroImageError, setHeroImageError] = useState(false);
   const siteUrl = window.location.href; // For sharing current page (conceptual in MVP)
+  
+  // Preload hero image
+  useEffect(() => {
+    if (siteData.heroImage) {
+      const img = new Image();
+      img.onload = () => setHeroImageLoaded(true);
+      img.onerror = () => {
+        setHeroImageError(true);
+        setHeroImageLoaded(true); // Still show content even if image fails
+      };
+      img.src = siteData.heroImage;
+    } else {
+      setHeroImageLoaded(true);
+    }
+  }, [siteData.heroImage]);
 
   const handleShare = (platformUrlPrefix: string) => {
     if (!platformUrlPrefix) { // Copy link case

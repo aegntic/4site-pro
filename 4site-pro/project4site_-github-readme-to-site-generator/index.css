@@ -1,0 +1,387 @@
+/* Project4Site - Professional Monochromatic Design with Wu-Tang Accents */
+
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  /* Monochromatic Base Colors */
+  --bg-primary: #000000;
+  --bg-secondary: #0d1117;
+  --bg-tertiary: #161b22;
+  --bg-quaternary: #21262d;
+  --bg-overlay: #30363d;
+  
+  /* Monochromatic Text Colors */
+  --text-primary: #ffffff;
+  --text-secondary: #c9d1d9;
+  --text-muted: #8b949e;
+  --text-subtle: #656d76;
+  --text-on-emphasis: #000000;
+  
+  /* Monochromatic Border Colors */
+  --border-default: #30363d;
+  --border-muted: #21262d;
+  --border-subtle: #484f58;
+  
+  /* Wu-Tang Accent Colors (Subtle Application) */
+  --wu-gold: #FFD700;
+  --wu-gold-muted: #FFC107;
+  --wu-gold-subtle: rgba(255, 215, 0, 0.1);
+  --wu-gold-hover: rgba(255, 215, 0, 0.2);
+  
+  /* Semantic Colors */
+  --success: #22c55e;
+  --warning: var(--wu-gold-muted);
+  --error: #ef4444;
+  --info: #3b82f6;
+  
+  /* Interactive Colors */
+  --link-default: var(--wu-gold);
+  --link-hover: var(--wu-gold-muted);
+  --button-primary: var(--wu-gold);
+  --button-primary-hover: var(--wu-gold-muted);
+  --accent-primary: var(--wu-gold);
+  --accent-secondary: var(--wu-gold-muted);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  margin: 0;
+  padding: 0;
+  line-height: 1.6;
+  overflow-x: hidden;
+  
+  /* Subtle professional background texture */
+  background-image: 
+    radial-gradient(circle at 20% 80%, var(--wu-gold-subtle) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.02) 0%, transparent 50%);
+  background-attachment: fixed;
+}
+
+/* Code font for technical elements */
+.mono, code, pre, .font-mono {
+  font-family: 'JetBrains Mono', 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+}
+
+/* Professional glow effects */
+.glow-gold {
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+}
+
+.glow-subtle {
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+}
+
+.glow-professional {
+  box-shadow: 0 0 25px rgba(255, 215, 0, 0.15);
+}
+
+/* Minimal animations */
+@keyframes subtle-float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-5px); }
+}
+
+@keyframes wu-glow {
+  0%, 100% { box-shadow: 0 0 15px rgba(255, 215, 0, 0.1); }
+  50% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.2); }
+}
+
+@keyframes subtle-gradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animate-subtle-float {
+  animation: subtle-float 4s ease-in-out infinite;
+}
+
+.animate-wu-glow {
+  animation: wu-glow 3s ease-in-out infinite;
+}
+
+.animate-subtle-gradient {
+  background-size: 200% 200%;
+  animation: subtle-gradient 4s ease infinite;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--wu-gold);
+}
+
+/* Selection colors */
+::selection {
+  background: var(--wu-gold-hover);
+  color: var(--text-on-emphasis);
+}
+
+/* Custom button styles */
+.btn-primary {
+  background: var(--wu-gold);
+  color: var(--text-on-emphasis);
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary:hover {
+  background: var(--wu-gold-muted);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.2);
+}
+
+.btn-secondary {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 2px solid var(--border-default);
+  padding: 10px 22px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+  border-color: var(--wu-gold);
+  background: var(--bg-tertiary);
+  transform: translateY(-1px);
+}
+
+/* Card styles */
+.card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
+  padding: 24px;
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  border-color: var(--wu-gold);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+}
+
+/* Input styles */
+.input {
+  background: var(--bg-tertiary);
+  border: 2px solid var(--border-default);
+  color: var(--text-primary);
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 16px;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--wu-gold);
+  box-shadow: 0 0 0 3px var(--wu-gold-hover);
+}
+
+.input::placeholder {
+  color: var(--text-muted);
+}
+
+/* Alert styles */
+.alert {
+  padding: 16px;
+  border-radius: 8px;
+  margin: 16px 0;
+  border-left: 4px solid;
+}
+
+.alert-success {
+  background: rgba(0, 255, 136, 0.1);
+  border-color: var(--success);
+  color: var(--success);
+}
+
+.alert-error {
+  background: rgba(255, 107, 157, 0.1);
+  border-color: var(--error);
+  color: var(--error);
+}
+
+.alert-warning {
+  background: rgba(255, 193, 7, 0.1);
+  border-color: var(--warning);
+  color: var(--warning);
+}
+
+.alert-info {
+  background: rgba(0, 217, 255, 0.1);
+  border-color: var(--info);
+  color: var(--info);
+}
+
+/* Loading indicator */
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--bg-tertiary);
+  border-top: 3px solid var(--wu-gold);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Code highlighting */
+.prose pre {
+  background: var(--bg-tertiary) !important;
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  padding: 16px;
+  overflow-x: auto;
+}
+
+.prose code {
+  background: var(--bg-tertiary);
+  color: var(--wu-gold);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+.prose pre code {
+  background: transparent;
+  padding: 0;
+  color: var(--text-primary);
+}
+
+/* Links */
+a {
+  color: var(--link-default);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: var(--link-hover);
+  text-decoration: underline;
+}
+
+/* Wu-Tang accent utility classes */
+.text-wu-gold { color: var(--wu-gold); }
+.text-wu-gold-muted { color: var(--wu-gold-muted); }
+.text-accent { color: var(--accent-primary); }
+.text-accent-secondary { color: var(--accent-secondary); }
+
+.bg-wu-gold { background-color: var(--wu-gold); }
+.bg-wu-gold-muted { background-color: var(--wu-gold-muted); }
+.bg-wu-gold-subtle { background-color: var(--wu-gold-subtle); }
+.bg-accent { background-color: var(--accent-primary); }
+
+.border-wu-gold { border-color: var(--wu-gold); }
+.border-wu-gold-muted { border-color: var(--wu-gold-muted); }
+.border-accent { border-color: var(--accent-primary); }
+
+/* Professional gradient backgrounds */
+.bg-gradient-professional {
+  background: linear-gradient(135deg, var(--bg-primary), var(--bg-secondary));
+}
+
+.bg-gradient-wu {
+  background: linear-gradient(135deg, var(--wu-gold), var(--wu-gold-muted));
+}
+
+.bg-gradient-subtle {
+  background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));
+}
+
+/* Professional text gradients */
+.text-gradient-wu {
+  background: linear-gradient(135deg, var(--wu-gold), var(--wu-gold-muted));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-monochrome {
+  background: linear-gradient(135deg, var(--text-primary), var(--text-secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Responsive design helpers */
+@media (max-width: 768px) {
+  .card {
+    padding: 16px;
+  }
+  
+  .btn-primary, .btn-secondary {
+    width: 100%;
+    margin-bottom: 8px;
+  }
+}
+
+/* Enhanced focus styles for accessibility */
+button:focus,
+input:focus,
+textarea:focus,
+select:focus {
+  outline: 2px solid var(--wu-gold);
+  outline-offset: 2px;
+}
+
+/* Smooth transitions for all interactive elements */
+* {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+/* Professional theme additions */
+.professional-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.professional-card:hover {
+  border-color: var(--wu-gold);
+  box-shadow: 0 4px 15px rgba(255, 215, 0, 0.1);
+}
+
+.wu-accent {
+  color: var(--wu-gold);
+}
+
+.wu-accent-bg {
+  background-color: var(--wu-gold-subtle);
+}
+
+.minimal-glow {
+  box-shadow: 0 2px 8px rgba(255, 215, 0, 0.1);
+}

@@ -1,103 +1,164 @@
 {
   "name": "project4site",
-  "version": "0.1.0",
-  "description": "AI-Powered Presentation Intelligence Platform - Transform GitHub repositories into professional multimedia experiences (project foresight)",
+  "version": "1.0.0",
+  "description": "AI-powered presentation intelligence platform that transforms GitHub repositories into professional multimedia experiences",
   "private": true,
-  "author": {
-    "name": "Aegntic Foundation",
-    "email": "contact@aegntic.ai",
-    "url": "https://aegntic.ai"
+  "scripts": {
+    "dev": "concurrently \"npm:dev:*\"",
+    "dev:api-gateway": "cd services/api-gateway && bun run dev",
+    "dev:github-app": "cd services/github-app-service && bun run dev",
+    "dev:site-generator": "cd services/site-generation-engine && bun run dev",
+    "dev:commission-service": "cd services/commission-service && bun run dev",
+    "dev:deployment-service": "cd services/deployment-service && bun run dev",
+    
+    "build": "npm run build:services",
+    "build:services": "concurrently \"npm:build:*\"",
+    "build:api-gateway": "cd services/api-gateway && bun run build",
+    "build:github-app": "cd services/github-app-service && bun run build",
+    "build:site-generator": "cd services/site-generation-engine && bun run build",
+    "build:commission-service": "cd services/commission-service && bun run build",
+    "build:deployment-service": "cd services/deployment-service && bun run build",
+    
+    "test": "concurrently \"npm:test:*\"",
+    "test:api-gateway": "cd services/api-gateway && bun test",
+    "test:github-app": "cd services/github-app-service && bun test",
+    "test:site-generator": "cd services/site-generation-engine && bun test",
+    "test:commission-service": "cd services/commission-service && bun test",
+    "test:deployment-service": "cd services/deployment-service && bun test",
+    "test:ai-pipeline": "cd services/ai-analysis-pipeline && cargo test",
+    "test:video-service": "cd services/video-generator && uv run pytest",
+    
+    "lint": "concurrently \"npm:lint:*\"",
+    "lint:js": "eslint . --ext .js,.ts,.tsx --fix",
+    "lint:rust": "cd services/ai-analysis-pipeline && cargo clippy -- -D warnings",
+    "lint:python": "cd services/video-generator && uv run ruff check --fix",
+    
+    "type-check": "concurrently \"npm:type-check:*\"",
+    "type-check:ts": "tsc --noEmit",
+    "type-check:python": "cd services/video-generator && uv run mypy .",
+    
+    "format": "concurrently \"npm:format:*\"",
+    "format:js": "prettier --write \"**/*.{js,ts,tsx,json,md}\"",
+    "format:rust": "cd services/ai-analysis-pipeline && cargo fmt",
+    "format:python": "cd services/video-generator && uv run black .",
+    
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "docker:build": "docker-compose build",
+    "docker:clean": "docker-compose down -v --remove-orphans && docker system prune -f",
+    
+    "db:migrate": "docker-compose exec postgres psql -U project4site -d project4site_dev -f /docker-entrypoint-initdb.d/02-schema.sql",
+    "db:seed": "docker-compose exec postgres psql -U project4site -d project4site_dev -f /docker-entrypoint-initdb.d/03-seed.sql",
+    "db:reset": "npm run docker:down && npm run docker:up && sleep 10 && npm run db:migrate && npm run db:seed",
+    "db:backup": "docker-compose exec postgres pg_dump -U project4site project4site_dev > backups/backup-$(date +%Y%m%d_%H%M%S).sql",
+    "db:console": "docker-compose exec postgres psql -U project4site -d project4site_dev",
+    
+    "redis:cli": "docker-compose exec redis redis-cli",
+    "redis:monitor": "docker-compose exec redis redis-cli monitor",
+    "redis:flush": "docker-compose exec redis redis-cli flushall",
+    
+    "monitoring:up": "docker-compose --profile monitoring up -d",
+    "monitoring:down": "docker-compose --profile monitoring down",
+    "dev-tools:up": "docker-compose --profile dev-tools up -d",
+    "dev-tools:down": "docker-compose --profile dev-tools down",
+    
+    "setup": "./setup-dev.sh --full",
+    "setup:minimal": "./setup-dev.sh --minimal",
+    "setup:services": "./setup-dev.sh --services-only",
+    
+    "health": "npm run health:all",
+    "health:all": "concurrently \"npm:health:*\"",
+    "health:api-gateway": "curl -f http://localhost:3000/health || echo 'API Gateway not responding'",
+    "health:github-app": "curl -f http://localhost:3010/health || echo 'GitHub App not responding'",
+    "health:site-generator": "curl -f http://localhost:3001/health || echo 'Site Generator not responding'",
+    "health:commission-service": "curl -f http://localhost:3002/health || echo 'Commission Service not responding'",
+    "health:deployment-service": "curl -f http://localhost:3003/health || echo 'Deployment Service not responding'",
+    "health:ai-pipeline": "curl -f http://localhost:8000/health || echo 'AI Pipeline not responding'",
+    "health:video-service": "curl -f http://localhost:3004/health || echo 'Video Service not responding'",
+    
+    "metrics": "curl -s http://localhost:3000/metrics",
+    "metrics:prometheus": "open http://localhost:9090",
+    "metrics:grafana": "open http://localhost:3030",
+    
+    "install:all": "npm install && npm run install:services",
+    "install:services": "concurrently \"npm:install:*\"",
+    "install:api-gateway": "cd services/api-gateway && bun install",
+    "install:github-app": "cd services/github-app-service && bun install",
+    "install:site-generator": "cd services/site-generation-engine && bun install",
+    "install:commission-service": "cd services/commission-service && bun install",
+    "install:deployment-service": "cd services/deployment-service && bun install",
+    "install:ai-pipeline": "cd services/ai-analysis-pipeline && cargo fetch",
+    "install:video-service": "cd services/video-generator && uv sync",
+    
+    "clean": "npm run clean:all",
+    "clean:all": "concurrently \"npm:clean:*\"",
+    "clean:node-modules": "find . -name 'node_modules' -type d -prune -exec rm -rf '{}' +",
+    "clean:rust": "cd services/ai-analysis-pipeline && cargo clean",
+    "clean:python": "cd services/video-generator && find . -name '__pycache__' -type d -prune -exec rm -rf '{}' +",
+    "clean:docker": "docker system prune -f && docker volume prune -f",
+    
+    "security:audit": "npm audit && npm run security:rust && npm run security:python",
+    "security:rust": "cd services/ai-analysis-pipeline && cargo audit",
+    "security:python": "cd services/video-generator && uv run safety check",
+    
+    "benchmark": "npm run benchmark:all",
+    "benchmark:all": "concurrently \"npm:benchmark:*\"",
+    "benchmark:api": "cd services/api-gateway && npm run benchmark",
+    "benchmark:ai": "cd services/ai-analysis-pipeline && cargo bench",
+    "benchmark:db": "docker-compose exec postgres pgbench -U project4site -d project4site_dev -c 10 -j 2 -t 1000",
+    
+    "docs:api": "npm run docs:api-spec",
+    "docs:api-spec": "swagger-codegen generate -i docs/api-spec.yml -l html2 -o docs/api/",
+    "docs:dev": "docsify serve docs",
+    
+    "migrate:create": "echo 'Creating new migration file...' && touch database/migrations/$(date +%Y%m%d_%H%M%S)_migration_name.sql",
+    "migrate:up": "npm run db:migrate",
+    "migrate:down": "echo 'Manual rollback required - check database/migrations/'",
+    
+    "queue:dashboard": "open http://localhost:3000/admin/queues",
+    "queue:clear": "docker-compose exec redis redis-cli flushdb",
+    "queue:stats": "curl -s http://localhost:3000/api/admin/queue-stats",
+    
+    "backup:create": "npm run db:backup && echo 'Backup created in backups/ directory'",
+    "backup:restore": "echo 'Manual restore required - use backup files in backups/ directory'",
+    
+    "ci:test": "npm run lint && npm run type-check && npm run test && npm run security:audit",
+    "ci:build": "npm run build && docker-compose build",
+    "ci:deploy": "npm run ci:build && docker-compose -f docker-compose.prod.yml up -d"
   },
-  "license": "SEE LICENSE IN LICENSE",
-  "homepage": "https://github.com/aegntic-foundation/project4site",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/aegntic-foundation/project4site.git"
+  "dependencies": {
+    "concurrently": "^8.2.2"
   },
-  "bugs": {
-    "url": "https://github.com/aegntic-foundation/project4site/issues",
-    "email": "contact@aegntic.ai"
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "eslint": "^8.55.0",
+    "prettier": "^3.1.0",
+    "typescript": "^5.3.0",
+    "docsify-cli": "^4.4.4"
   },
-  "keywords": [
-    "ai",
-    "automation",
-    "website-builder",
-    "github",
-    "developer-tools",
-    "presentation",
-    "video-generation",
-    "commission-system",
-    "developer-ecosystem",
-    "project4site",
-    "p4s",
-    "project-foresight"
+  "workspaces": [
+    "services/*"
   ],
   "engines": {
     "node": ">=18.0.0",
     "bun": ">=1.0.0"
   },
-  "scripts": {
-    "dev": "bun run dev:all",
-    "dev:all": "concurrently \"bun run dev:app\" \"bun run dev:api\" \"bun run dev:github-app\"",
-    "dev:app": "next dev",
-    "dev:api": "bun run --watch src/api/server.ts",
-    "dev:github-app": "bun run --watch src/github-app/webhook-server.ts",
-    "build": "bun run build:all",
-    "build:all": "bun run build:app && bun run build:api",
-    "build:app": "next build",
-    "build:api": "bun build src/api/server.ts --outdir dist --target node",
-    "start": "next start",
-    "test": "bun test",
-    "test:watch": "bun test --watch",
-    "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
-    "lint:fix": "eslint . --ext .ts,.tsx,.js,.jsx --fix",
-    "type-check": "tsc --noEmit",
-    "setup": "bun run setup:env && bun run setup:db",
-    "setup:env": "cp .env.example .env",
-    "setup:db": "bun run db:migrate && bun run db:seed",
-    "db:migrate": "drizzle-kit migrate",
-    "db:seed": "bun run src/db/seed.ts",
-    "db:reset": "bun run src/db/reset.ts",
-    "format": "prettier --write .",
-    "format:check": "prettier --check ."
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aegntic/project4site.git"
   },
-  "dependencies": {
-    "@ai-sdk/openai": "^0.0.66",
-    "@anthropic-ai/sdk": "^0.30.1",
-    "@octokit/webhooks": "^13.2.7",
-    "@supabase/supabase-js": "^2.39.3",
-    "@vercel/analytics": "^1.1.1",
-    "ai": "^3.4.32",
-    "drizzle-orm": "^0.33.0",
-    "fastify": "^4.26.2",
-    "next": "^14.1.0",
-    "postgres": "^3.4.3",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "stripe": "^14.21.0",
-    "tailwindcss": "^3.4.1",
-    "typescript": "^5.3.3",
-    "zod": "^3.22.4"
-  },
-  "devDependencies": {
-    "@types/node": "^20.11.17",
-    "@types/react": "^18.2.55",
-    "@types/react-dom": "^18.2.19",
-    "@typescript-eslint/eslint-plugin": "^6.21.0",
-    "@typescript-eslint/parser": "^6.21.0",
-    "concurrently": "^8.2.2",
-    "drizzle-kit": "^0.24.2",
-    "eslint": "^8.56.0",
-    "eslint-config-next": "^14.1.0",
-    "prettier": "^3.2.5"
-  },
-  "optionalDependencies": {
-    "@biomejs/biome": "^1.5.3"
-  },
-  "funding": {
-    "type": "individual",
-    "url": "https://aegntic.foundation"
-  },
-  "copyright": "© 2025 Aegntic Foundation. All rights reserved.",
-  "trademark": "project4site and p4s are trademarks of Aegntic Foundation"
+  "keywords": [
+    "ai",
+    "presentation",
+    "github",
+    "site-generator",
+    "microservices",
+    "docker",
+    "typescript",
+    "rust",
+    "python"
+  ],
+  "author": "Aegntic Foundation",
+  "license": "MIT"
 }

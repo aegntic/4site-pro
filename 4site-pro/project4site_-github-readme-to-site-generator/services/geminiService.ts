@@ -1,43 +1,51 @@
 
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GEMINI_MODEL_NAME, GEMINI_API_TIMEOUT_MS } from '../constants';
 
-// Ensure API_KEY is available in the environment.
-// In a Vite/CRA app, this would be process.env.REACT_APP_API_KEY or process.env.VITE_API_KEY
-// For this environment, we rely on a globally available process.env.API_KEY
-const API_KEY = process.env.API_KEY;
+// Get API key from Vite environment variables
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
 if (!API_KEY) {
-  console.error("Gemini API Key not found. Please set the API_KEY environment variable.");
-  // Potentially throw an error or handle this state in the UI
+  console.error("Gemini API Key not found. Please set the VITE_GEMINI_API_KEY environment variable.");
+  throw new Error("Gemini API Key not configured");
 }
 
-const ai = new GoogleGenAI({ apiKey: API_KEY! }); // Non-null assertion, assuming it's set for app to work
+const genAI = new GoogleGenerativeAI(API_KEY);
 
 const generateContentWithTimeout = async (prompt: string): Promise<string> => {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), GEMINI_API_TIMEOUT_MS);
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    setTimeout(() => reject(new Error(`Gemini API request timed out after ${GEMINI_API_TIMEOUT_MS / 1000} seconds.`)), GEMINI_API_TIMEOUT_MS);
+  });
 
   try {
-    const response = await ai.models.generateContent({
-      model: GEMINI_MODEL_NAME,
-      contents: prompt,
-      // config: { thinkingConfig: { thinkingBudget: 0 } } // Disable thinking for speed if needed
-    });
-    // The line below for signal is not directly supported by generateContent in this way.
-    // AbortController is usually for fetch. For @google/genai, direct timeout is managed.
-    // If the SDK supports AbortSignal in future, it could be passed in config.
-    // For now, the timeout is a client-side race condition.
+    const model = genAI.getGenerativeModel({ model: GEMINI_MODEL_NAME });
     
-    clearTimeout(timeoutId);
-    return response.text;
+    const resultPromise = (async () => {
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
+      if (!text) {
+        throw new Error("Empty response from Gemini API");
+      }
+      return text;
+    })();
+    
+    // Race between the API call and timeout
+    const text = await Promise.race([resultPromise, timeoutPromise]);
+    return text;
   } catch (error) {
-    clearTimeout(timeoutId);
-    if (error instanceof Error && error.name === 'AbortError') {
-      throw new Error(`Gemini API request timed out after ${GEMINI_API_TIMEOUT_MS / 1000} seconds.`);
-    }
     console.error("Error calling Gemini API:", error);
-    throw new Error(`Gemini API error: ${error instanceof Error ? error.message : String(error)}`);
+    if (error instanceof Error) {
+      // Check for specific API errors
+      if (error.message.includes('API key not valid')) {
+        throw new Error(`Gemini API error: Invalid API key. Please check your VITE_GEMINI_API_KEY in .env.local`);
+      }
+      if (error.message.includes('status: 400')) {
+        throw new Error(`Gemini API error: ${error.message}. The AI model might be unavailable or the repository URL might be inaccessible. Please try again or use a different URL.`);
+      }
+      throw new Error(`Gemini API error: ${error.message}`);
+    }
+    throw new Error(`Gemini API error: ${String(error)}`);
   }
 };
 

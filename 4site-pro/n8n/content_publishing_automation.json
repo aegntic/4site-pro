@@ -1,0 +1,55 @@
+
+{
+  "name": "Content Publishing Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "name": "Manual Trigger / Event",
+      "type": "n8n-nodes-base.manualTrigger", // Or a webhook, schedule etc.
+      "typeVersion": 1,
+      "position": [ 250, 300 ],
+      "id": "c4d5e6f7-a8b9-c0d1-e2f3-a4b5c6d7e8f9"
+    },
+    {
+      "parameters": {
+        "url": "http://ai-analysis-pipeline/api/generate-blog-post", // Example call to an internal service
+        "options": {},
+        "bodyParameters": {
+            "parameters": [
+                { "name": "topic", "value": "{{ $json.topic || 'New Feature Update' }}" }
+            ]
+        }
+      },
+      "name": "Generate Blog Content",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [ 450, 300 ],
+      "id": "d5e6f7a8-b9c0-d1e2-f3a4-b5c6d7e8f9a0"
+    },
+    {
+      "parameters": {
+        "content": "{{ $json.body.blogContent }}",
+        "title": "{{ $json.body.blogTitle || 'Project4Site Update' }}",
+        "status": "publish"
+        // Add other parameters for your CMS (e.g. WordPress, Ghost)
+      },
+      "name": "Publish to Blog (CMS)",
+      "type": "n8n-nodes-base.wordpress", // Example, replace with your CMS node
+      "typeVersion": 1, // Check version for your CMS node
+      "position": [ 650, 300 ],
+      "credentials": { "wordPressApi": { "id": "YOUR_CMS_CREDENTIAL_ID", "name": "CMS account" } },
+      "id": "e6f7a8b9-c0d1-e2f3-a4b5-c6d7e8f9a0b1"
+    }
+  ],
+  "connections": {
+    "Manual Trigger / Event": { "main": [ [ { "node": "Generate Blog Content", "type": "main", "index": 0 } ] ] },
+    "Generate Blog Content": { "main": [ [ { "node": "Publish to Blog (CMS)", "type": "main", "index": 0 } ] ] }
+  },
+  "active": false,
+  "settings": {},
+  "id": "workflow_content_publishing_automation",
+  "meta": { "instanceId": "changeme" },
+  "pinData": {}
+}

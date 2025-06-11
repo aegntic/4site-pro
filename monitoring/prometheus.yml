@@ -1,0 +1,120 @@
+# ===================================================================
+# PROJECT4SITE - PROMETHEUS CONFIGURATION
+# ===================================================================
+# Monitoring configuration for all microservices
+# ===================================================================
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  scrape_timeout: 10s
+
+# Rules for alerting
+rule_files:
+  - "rules/*.yml"
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # API Gateway metrics
+  - job_name: 'api-gateway'
+    static_configs:
+      - targets: ['api-gateway:3000']
+    metrics_path: '/metrics'
+    scrape_interval: 5s
+    scrape_timeout: 3s
+
+  # GitHub App Service metrics
+  - job_name: 'github-app'
+    static_configs:
+      - targets: ['github-app:3010']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  # AI Analysis Pipeline metrics
+  - job_name: 'ai-pipeline'
+    static_configs:
+      - targets: ['ai-pipeline:8000']
+    metrics_path: '/metrics'
+    scrape_interval: 5s
+
+  # Site Generation Engine metrics
+  - job_name: 'site-generator'
+    static_configs:
+      - targets: ['site-generator:3001']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  # Commission Service metrics
+  - job_name: 'commission-service'
+    static_configs:
+      - targets: ['commission-service:3002']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+
+  # Deployment Service metrics
+  - job_name: 'deployment-service'
+    static_configs:
+      - targets: ['deployment-service:3003']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  # Video Generation Service metrics
+  - job_name: 'video-service'
+    static_configs:
+      - targets: ['video-service:3004']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # PostgreSQL metrics
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres:5432']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # Redis metrics
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+
+  # Neo4j metrics
+  - job_name: 'neo4j'
+    static_configs:
+      - targets: ['neo4j:2004']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # Node.js application metrics
+  - job_name: 'node-apps'
+    file_sd_configs:
+      - files:
+        - '/etc/prometheus/targets/node-apps.json'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: 'node-exporter:9100'
+
+# Remote write configuration for long-term storage
+remote_write:
+  - url: "http://influxdb:8086/api/v1/prom/write?db=prometheus"
+    queue_config:
+      max_samples_per_send: 1000
+      max_shards: 200
+      capacity: 2500

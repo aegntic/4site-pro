@@ -1,0 +1,69 @@
+
+{
+  "name": "Performance Analytics & Optimization",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [ { "triggerAtHour": 2, "triggerAtMinute": 0 } ] } // e.g. Nightly
+      },
+      "name": "Nightly Analytics Run",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [ 250, 300 ],
+      "id": "f7a8b9c0-d1e2-f3a4-b5c6-d7e8f9a0b1c2"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT gs.site_slug, sa.page_views, sa.unique_visitors FROM generated_sites gs JOIN site_analytics sa ON gs.id = sa.generated_site_id WHERE sa.event_date = CURRENT_DATE - INTERVAL '1 day';",
+        "options": {}
+      },
+      "name": "Fetch Site Analytics",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.2,
+      "position": [ 450, 300 ],
+      "credentials": { "postgres": { "id": "YOUR_POSTGRES_CREDENTIAL_ID", "name": "Postgres account" } },
+      "id": "a8b9c0d1-e2f3-a4b5-c6d7-e8f9a0b1c2d3"
+    },
+    {
+      "parameters": {
+          "conditions": {
+              "string": [
+                  { "value1": "{{ $json.page_views }}", "operation": "lower", "value2": 10 } // Example: low page views
+              ]
+          }
+      },
+      "name": "Identify Underperforming",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [ 650, 300 ],
+      "id": "b9c0d1e2-f3a4-b5c6-d7e8-f9a0b1c2d3e4"
+    },
+    {
+        "parameters": {
+            "channel": "#alerts",
+            "text": "Site {{ $json.site_slug }} is underperforming with only {{ $json.page_views }} views."
+        },
+        "name": "Send Slack Alert",
+        "type": "n8n-nodes-base.slack",
+        "typeVersion": 2,
+        "position": [ 850, 200 ],
+        "credentials": { "slackApi": { "id": "YOUR_SLACK_CREDENTIAL_ID", "name": "Slack account" } },
+        "id": "c0d1e2f3-a4b5-c6d7-e8f9-a0b1c2d3e4f5"
+    }
+  ],
+  "connections": {
+    "Nightly Analytics Run": { "main": [ [ { "node": "Fetch Site Analytics", "type": "main", "index": 0 } ] ] },
+    "Fetch Site Analytics": { "main": [ [ { "node": "Identify Underperforming", "type": "main", "index": 0 } ] ] },
+    "Identify Underperforming": {
+        "main": [
+            [ { "node": "Send Slack Alert", "type": "main", "index": 0 } ] // True branch
+        ]
+     }
+  },
+  "active": false,
+  "settings": {},
+  "id": "workflow_performance_analytics_optimization",
+  "meta": { "instanceId": "changeme" },
+  "pinData": {}
+}

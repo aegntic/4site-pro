@@ -1,0 +1,281 @@
+version: '3.9'
+
+networks:
+  project4site:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  postgres_data:
+  redis_data:
+  static_sites:
+  video_outputs:
+  logs:
+
+services:
+  # ============================================
+  # DATABASE SERVICES
+  # ============================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: p4s_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME:-project4site_db}
+      POSTGRES_USER: ${DATABASE_USER:-project4site}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-project4site_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      project4site:
+        ipv4_address: 172.20.0.10
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER:-project4site}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: p4s_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      project4site:
+        ipv4_address: 172.20.0.11
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================
+  # APPLICATION SERVICES
+  # ============================================
+  api-gateway:
+    build:
+      context: ../services/api-gateway
+      dockerfile: Dockerfile
+    container_name: p4s_api_gateway
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - PORT=4000
+    ports:
+      - "4000:4000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      project4site:
+        ipv4_address: 172.20.0.20
+    volumes:
+      - logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  github-app-service:
+    build:
+      context: ../services/github-app-service
+      dockerfile: Dockerfile
+    container_name: p4s_github_app
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - PORT=3001
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      project4site:
+        ipv4_address: 172.20.0.21
+    volumes:
+      - logs:/app/logs
+
+  ai-analysis-pipeline:
+    build:
+      context: ../services/ai-analysis-pipeline
+      dockerfile: Dockerfile
+    container_name: p4s_ai_pipeline
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - RUST_LOG=info
+      - PORT=3002
+    ports:
+      - "3002:3002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      project4site:
+        ipv4_address: 172.20.0.22
+    volumes:
+      - logs:/app/logs
+
+  site-generation-engine:
+    build:
+      context: ../services/site-generation-engine
+      dockerfile: Dockerfile
+    container_name: p4s_site_generator
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - PORT=3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      project4site:
+        ipv4_address: 172.20.0.23
+    volumes:
+      - static_sites:/app/output_bundles
+      - logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  deployment-service:
+    build:
+      context: ../services/deployment-service
+      dockerfile: Dockerfile
+    container_name: p4s_deployment
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - PORT=3003
+    ports:
+      - "3003:3003"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      project4site:
+        ipv4_address: 172.20.0.24
+    volumes:
+      - static_sites:/app/static_sites:ro
+      - logs:/app/logs
+
+  commission-service:
+    build:
+      context: ../services/commission-service
+      dockerfile: Dockerfile
+    container_name: p4s_commission
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - PORT=3004
+    ports:
+      - "3004:3004"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      project4site:
+        ipv4_address: 172.20.0.25
+    volumes:
+      - logs:/app/logs
+
+  video-generator:
+    build:
+      context: ../services/video-slideshow-generator
+      dockerfile: Dockerfile
+    container_name: p4s_video_generator
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PORT=3005
+    ports:
+      - "3005:3005"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      project4site:
+        ipv4_address: 172.20.0.26
+    volumes:
+      - video_outputs:/app/video_outputs
+      - logs:/app/logs
+
+  # ============================================
+  # DEVELOPMENT TOOLS (Optional)
+  # ============================================
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: p4s_pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@project4site.dev
+      PGADMIN_DEFAULT_PASSWORD: admin123
+    ports:
+      - "5050:80"
+    networks:
+      project4site:
+        ipv4_address: 172.20.0.30
+    profiles:
+      - dev-tools
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: p4s_redis_commander
+    restart: unless-stopped
+    environment:
+      REDIS_HOSTS: local:redis:6379
+    ports:
+      - "8081:8081"
+    networks:
+      project4site:
+        ipv4_address: 172.20.0.31
+    profiles:
+      - dev-tools
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: p4s_mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      project4site:
+        ipv4_address: 172.20.0.32
+    profiles:
+      - dev-tools

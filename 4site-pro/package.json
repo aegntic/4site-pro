@@ -1,0 +1,33 @@
+{
+  "name": "project4site:-presentation-intelligence-platform",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react-dom": "^19.1.0",
+    "@google/genai": "^1.4.0",
+    "react": "^19.1.0",
+    "lucide-react": "^0.513.0",
+    "framer-motion": "^12.16.0",
+    "marked": "^15.0.12",
+    "zod": "^3.25.57",
+    "fastify": "^5.3.3",
+    "ioredis": "^5.6.1",
+    "next": "^15.3.3",
+    "drizzle-orm": "^0.44.2",
+    "postgres": "^3.4.7",
+    "process": "^0.11.10",
+    "dotenv": "^16.5.0",
+    "drizzle-kit": "^0.31.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "typescript": "~5.7.2",
+    "vite": "^6.2.0"
+  }
+}

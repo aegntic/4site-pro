@@ -4,207 +4,348 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is **project4site** (ProjectPresence) - an AI-powered presentation intelligence platform that transforms GitHub repositories into professional multimedia experiences. The platform automatically generates landing pages, videos, slideshows, and community hubs from just three markdown files: README.md, PLANNING.md, and TASKS.md.
+**project4site** (aka **p4s** or **"project foresight"**) is an AI-powered presentation intelligence platform that transforms GitHub repositories into professional multimedia experiences. The platform automatically generates landing pages, videos, slideshows, and community hubs from markdown files (README.md, PLANNING.md, TASKS.md).
 
-## Parent Ecosystem Context
+### Project Status
+- **Current Stage**: MVP implementation in `4site-pro/project4site_-github-readme-to-site-generator/`
+- **Development Status**: Functional prototype with AI-powered site generation
+- **Future Vision**: Full microservices platform with video generation, commission tracking, and enterprise features
 
-This project is part of the larger ae-co-system located at `/home/tabs/ae-co-system/` which includes:
-- DailyDoco Pro (automated documentation platform)
-- aegnt-27 (Human Peak Protocol)
-- AegntiX (AI orchestration platform)
-- Aegntic MCP (dynamic MCP server generator)
-- YouTube Intelligence Engine
-- Quick Data MCP
+## Technology Stack
 
-## Technology Stack Priorities
+### Current MVP Stack
+- **Frontend**: React 19.1.0, Vite 6.2.0, Framer Motion 12.16.0
+- **AI Integration**: @google/genai 1.4.0 (Google Gemini API)
+- **Styling**: Component-based inline styles (no CSS framework)
+- **Markdown Processing**: marked 15.0.12
+- **Icons**: lucide-react 0.513.0
+- **Type System**: TypeScript 5.7.2
 
-### Runtime Priorities (CRITICAL)
-1. **Python**: Use `uv` instead of pip/pip-tools/poetry for ALL Python package management (10-100x faster)
-2. **JavaScript/TypeScript**: Use `bun` instead of npm/node for ALL JS/TS development (3x faster)
-3. **Rust**: Use `cargo` for systems programming and performance-critical components
-
-### Core Technologies
-- **Languages**: TypeScript (primary), Rust (performance-critical), Python 3.12+ (AI pipeline)
-- **Runtimes**: Bun (preferred), Node.js (legacy only)
-- **Frameworks**: Next.js 14+, React 18+, Vite, Fastify
-- **Styling**: TailwindCSS, Framer Motion
-- **AI Integration**: OpenAI SDK, Anthropic SDK, Google Gemini API
-- **Databases**: PostgreSQL (via Drizzle ORM), Redis (caching)
-- **Deployment**: Vercel, GitHub Actions, Docker
-
-## Project Structure
-
-```
-/home/tabs/ae-co-system/project4site/
-├── src/                       # Main application source (when created)
-│   ├── api/                   # Backend API server (Fastify)
-│   ├── app/                   # Next.js app directory
-│   ├── github-app/            # GitHub webhook processing
-│   └── db/                    # Database models and migrations
-├── 4site-pro/                 # Current implementation prototype
-│   └── project4site_-github-readme-to-site-generator/
-│       ├── components/        # React components
-│       │   ├── generator/     # Site generation UI
-│       │   ├── landing/       # Landing page components
-│       │   ├── templates/     # Site templates
-│       │   └── ui/            # Reusable UI components
-│       ├── services/          # Business logic
-│       │   ├── geminiService.ts    # AI content analysis
-│       │   └── markdownParser.ts   # Markdown processing
-│       └── App.tsx           # Main application entry
-└── package.json              # Root package configuration
-```
+### Planned Full Platform Stack
+- **Frontend**: Next.js 15, TailwindCSS, React 18
+- **Backend**: Fastify 5 (TypeScript), FastAPI (Python)
+- **Database**: PostgreSQL with Drizzle ORM, Redis, Neo4j
+- **AI Models**: DeepSeek R1.1, Gemma 3, Anthropic Claude, OpenAI
+- **Infrastructure**: Docker, Kubernetes, n8n workflows
+- **Deployment**: Vercel, Railway, GitHub Actions
 
 ## Development Commands
 
-### Main Project (Root Directory)
+### Current MVP (ACTIVE DEVELOPMENT)
 ```bash
-# Initial setup
-bun install                    # Install all dependencies
-bun run setup                  # Setup environment and database
+# Navigate to the actual implementation
+cd 4site-pro/project4site_-github-readme-to-site-generator/
+
+# Install dependencies
+npm install                   # Using npm (Vite project)
 
 # Development
-bun run dev                    # Start all services concurrently
-bun run dev:app               # Next.js frontend only
-bun run dev:api               # Fastify API server only
-bun run dev:github-app        # GitHub webhook server only
+npm run dev                   # Start dev server (http://localhost:5173)
+npm run build                # Build for production
+npm run preview              # Preview production build
 
-# Testing & Quality
-bun test                      # Run all tests
-bun test:watch               # Run tests in watch mode
-bun run lint                  # ESLint checking
-bun run lint:fix             # ESLint with auto-fix
-bun run type-check           # TypeScript type checking
-bun run format               # Prettier formatting
-bun run format:check         # Check formatting
-
-# Build & Production
-bun run build                 # Build all components
-bun run build:app            # Build Next.js app
-bun run build:api            # Build API server
-bun run start                # Start production server
-
-# Database Management
-bun run db:migrate           # Run database migrations
-bun run db:seed              # Seed development data
-bun run db:reset             # Reset database (development only)
+# Environment setup (REQUIRED)
+echo "GEMINI_API_KEY=your_actual_api_key" > .env.local
 ```
 
-### 4site-pro Prototype (Subdirectory)
+### Root Project Commands (PLANNED - NOT FUNCTIONAL)
 ```bash
-# From 4site-pro/project4site_-github-readme-to-site-generator/
-bun install                   # Install dependencies
-bun run dev                   # Start Vite dev server (port 5173)
-bun run build                # Build for production
-bun run preview              # Preview production build
+# These are defined in root package.json but not yet implemented
+bun run dev                   # Will run all services
+bun run dev:app              # Next.js frontend
+bun run dev:api              # API server
+bun run dev:github-app       # GitHub webhook server
+bun run db:migrate           # Database migrations
+bun run test                 # Run tests
+bun run lint                 # ESLint
+bun run type-check           # TypeScript checking
 ```
 
-## Architecture Patterns
+## Architecture Overview
 
-### The Disler Patterns (MANDATORY)
-- `.claude/` directories for AI-enhanced development workflows
-- `ai_docs/` for persistent AI memory and technical knowledge
-- `specs/` for executable feature specifications
-- `prompts/` for reusable prompt libraries
-- Modular, parallel-processing-ready architectures
+### Current Implementation Structure
+```
+project4site/
+├── 4site-pro/
+│   ├── project4site_-github-readme-to-site-generator/  # ACTIVE MVP
+│   │   ├── App.tsx                    # Main React application
+│   │   ├── index.tsx                  # Entry point
+│   │   ├── components/
+│   │   │   ├── generator/             # Site generation UI
+│   │   │   │   ├── LoadingIndicator.tsx
+│   │   │   │   ├── SitePreview.tsx
+│   │   │   │   └── URLInputForm.tsx
+│   │   │   ├── landing/               # Landing page sections
+│   │   │   │   ├── HeroSection.tsx
+│   │   │   │   ├── FeaturesSection.tsx
+│   │   │   │   ├── DemoSection.tsx
+│   │   │   │   └── Footer.tsx
+│   │   │   ├── templates/             # Site templates
+│   │   │   │   ├── CreativeProjectTemplate.tsx
+│   │   │   │   └── TechProjectTemplate.tsx
+│   │   │   └── ui/                    # Reusable components
+│   │   │       ├── Alert.tsx
+│   │   │       ├── Button.tsx
+│   │   │       ├── Card.tsx
+│   │   │       ├── Icon.tsx
+│   │   │       └── Input.tsx
+│   │   ├── services/
+│   │   │   ├── geminiService.ts       # AI content generation
+│   │   │   └── markdownParser.ts      # README parsing
+│   │   ├── constants.ts               # App configuration
+│   │   ├── types.ts                   # TypeScript definitions
+│   │   ├── vite.config.ts             # Vite configuration
+│   │   └── package.json               # Dependencies
+│   └── n8n/                           # Automation workflows
+│       ├── content_publishing_automation.json
+│       ├── master_content_orchestrator.json
+│       ├── performance_analytics_optimization.json
+│       └── strategic_social_engagement.json
+└── services/                          # Future microservices (stubs only)
+    ├── ai-analysis-pipeline/          # Rust AI processing
+    ├── api-gateway/                   # Request routing
+    ├── commission-service/            # Partner tracking
+    ├── deployment-service/            # Auto-deployment
+    ├── github-app-service/            # Webhook processing
+    └── site-generation-engine/        # Next.js app
+```
 
-### Privacy-First Design
-- **Local-First**: All processing happens locally by default
-- **Granular Consent**: Project-level permissions management
-- **Sensitive Content Detection**: Real-time API key/password filtering
-- **Encryption**: AES-256 for all stored content
+## Key Implementation Details
 
-### Key Components
+### Site Generation Flow
+1. User inputs GitHub repository URL
+2. `URLInputForm` validates and submits URL
+3. `geminiService.ts` fetches README content via GitHub API
+4. Gemini AI analyzes content and generates site structure
+5. Template selection based on project type (tech/creative)
+6. `SitePreview` renders the generated site
+7. User can deploy or customize further
 
-1. **GitHub App Integration**
-   - Webhook processing for repository changes
-   - Real-time updates when markdown files change
-   - OAuth authentication flow
+### AI Integration Pattern
+```typescript
+// From services/geminiService.ts
+import { GoogleGenerativeAI } from '@google/genai';
 
-2. **AI Processing Pipeline**
-   - Content analysis using Gemini/GPT-4/Claude
-   - Design system selection based on content type
-   - Video and slideshow generation pipeline
+const GEMINI_API_KEY = import.meta.env.GEMINI_API_KEY || 'PLACEHOLDER_API_KEY';
+const GEMINI_MODEL_NAME = 'gemini-2.0-flash-exp';
+const GEMINI_API_TIMEOUT_MS = 30000;
 
-3. **Site Generation Engine**
-   - Template selection based on project type
-   - Responsive component library
-   - Real-time preview system
+export const analyzeRepository = async (readmeContent: string): Promise<SiteData> => {
+  const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+  const model = genAI.getGenerativeModel({ model: GEMINI_MODEL_NAME });
+  
+  // Structured prompt for consistent output
+  const prompt = `Analyze this GitHub repository README...`;
+  
+  const result = await model.generateContent(prompt);
+  const response = await result.response;
+  return parseGeminiResponse(response.text());
+};
+```
 
-4. **Developer Toolkit Orchestrator**
-   - Service integration automation
-   - Account provisioning across platforms
-   - Environment setup automation
+### Environment Variables
 
-## Development Guidelines
+#### Required for MVP
+```bash
+# Only one environment variable needed
+GEMINI_API_KEY=your_actual_api_key    # Google Gemini API access
 
-### Code Style
-- Use TypeScript strict mode for all new code
-- Follow Airbnb ESLint configuration
-- Use functional components with hooks in React
-- Implement proper error boundaries and suspense
+# Set in .env.local for Vite (NOT .env)
+# Access via: import.meta.env.GEMINI_API_KEY
+```
 
-### Testing Strategy
-- Unit tests for all business logic
-- Integration tests for API endpoints
-- E2E tests for critical user flows
-- Minimum 80% code coverage target
+#### Future Environment Variables
+```bash
+# These will be needed for full platform
+GITHUB_TOKEN=github_pat_xxx           # GitHub API enhanced access
+ANTHROPIC_API_KEY=sk-ant-xxx          # Claude API
+OPENAI_API_KEY=sk-xxx                 # OpenAI API
+DATABASE_URL=postgresql://xxx         # PostgreSQL
+REDIS_URL=redis://localhost:6379      # Caching
+VERCEL_TOKEN=xxx                      # Deployment
+STRIPE_SECRET_KEY=sk_xxx              # Payments
+```
 
-### Performance Requirements
+## Development Patterns
+
+### Component Structure
+- **Feature-based organization**: Components grouped by functionality
+- **Template system**: Pluggable templates for different project types
+- **Prop drilling minimized**: Direct prop passing in small component trees
+- **No global state management**: Local state with useState hooks
+
+### TypeScript Patterns
+```typescript
+// From types.ts
+export interface SiteData {
+  title: string;
+  description: string;
+  features: string[];
+  techStack: string[];
+  sections: Section[];
+  projectType: 'tech' | 'creative' | 'business';
+  primaryColor: string;
+  githubUrl: string;
+}
+
+export interface Section {
+  id: string;
+  title: string;
+  content: string;
+  type: 'overview' | 'features' | 'installation' | 'usage' | 'custom';
+}
+```
+
+### Error Handling
+- API timeouts with AbortController
+- Graceful fallbacks for AI failures
+- User-friendly error messages
+- Console logging for debugging
+
+## Common Tasks
+
+### Running the MVP
+```bash
+cd 4site-pro/project4site_-github-readme-to-site-generator/
+npm install
+npm run dev
+# Open http://localhost:5173
+```
+
+### Adding a New Template
+1. Create component in `components/templates/NewTemplate.tsx`
+2. Import in `App.tsx`
+3. Add logic in `renderTemplate()` function
+4. Update `projectType` union in `types.ts`
+
+### Testing AI Integration
+```bash
+# Set test API key
+echo "GEMINI_API_KEY=your_test_key" > .env.local
+
+# Run development server
+npm run dev
+
+# Test with various GitHub repos
+# Example: https://github.com/facebook/react
+```
+
+### Debugging Gemini API
+- Check API key in `.env.local` (not `.env`)
+- Verify model name: `gemini-2.0-flash-exp`
+- Monitor rate limits (current timeout: 30s)
+- Check console for detailed error messages
+
+## Troubleshooting
+
+### Common Issues
+
+1. **"PLACEHOLDER_API_KEY" Error**
+   - Ensure `.env.local` exists with valid GEMINI_API_KEY
+   - Restart dev server after adding env variable
+
+2. **Vite Environment Variables**
+   - Use `import.meta.env` not `process.env`
+   - Only `VITE_` prefixed vars are exposed to client
+   - GEMINI_API_KEY works because it's used server-side
+
+3. **Module Not Found Errors**
+   - Run `npm install` in the correct directory
+   - Check you're in `4site-pro/project4site_-github-readme-to-site-generator/`
+
+4. **TypeScript Errors**
+   - No `tsconfig.json` in MVP (uses Vite defaults)
+   - Run `tsc --noEmit` to check types
+
+## Performance Considerations
+
+### Current Targets
 - Site generation: < 30 seconds
-- Video creation: < 5 minutes
-- Page load time: < 3 seconds
-- API response time: < 200ms (p95)
+- AI processing: < 10 seconds
+- Initial page load: < 3 seconds
+- Bundle size: < 500KB
 
-## Environment Variables
+### Optimization Strategies
+- Lazy load templates with React.lazy()
+- Memoize expensive computations
+- Cache AI responses (planned)
+- Minimize bundle with tree shaking
 
-Required environment variables (see .env.example):
-```bash
-# API Keys
-OPENAI_API_KEY=              # OpenAI API for content analysis
-ANTHROPIC_API_KEY=           # Claude API for advanced processing
-GOOGLE_GEMINI_API_KEY=       # Gemini API for content generation
+## Security Considerations
 
-# Database
-DATABASE_URL=                # PostgreSQL connection string
-REDIS_URL=                   # Redis connection string
+### API Key Management
+- Never commit API keys
+- Use environment variables
+- Implement server-side proxy (planned)
+- Rate limit API calls
 
-# GitHub App
-GITHUB_APP_ID=               # GitHub App ID
-GITHUB_APP_PRIVATE_KEY=      # GitHub App private key
-GITHUB_WEBHOOK_SECRET=       # Webhook verification secret
+### Content Security
+- Sanitize markdown input
+- Validate GitHub URLs
+- Escape HTML in templates
+- CORS headers for API
 
-# Services
-SUPABASE_URL=                # Supabase project URL
-SUPABASE_ANON_KEY=          # Supabase anonymous key
-STRIPE_SECRET_KEY=           # Stripe API key
-VERCEL_API_TOKEN=           # Vercel deployment token
+## Future Development Roadmap
 
-# Development
-NODE_ENV=development         # Environment mode
-PORT=3000                    # Application port
-API_PORT=3001               # API server port
+### Phase 1: MVP Enhancement (Current)
+- ✅ Basic site generation
+- ✅ AI content analysis
+- ✅ Template system
+- 🔄 Mobile optimization
+- 📅 Analytics integration
+- 📅 More templates
+
+### Phase 2: Full Platform
+- 📅 GitHub App integration
+- 📅 Video generation
+- 📅 Commission tracking
+- 📅 User authentication
+- 📅 Database persistence
+- 📅 Deployment automation
+
+### Phase 3: Enterprise
+- 📅 Multi-model AI support
+- 📅 White-label options
+- 📅 Advanced customization
+- 📅 Team collaboration
+- 📅 API marketplace
+- 📅 SLA guarantees
+
+## Integration with ae-co-system
+
+This project is part of the larger ae-co-system and shares:
+- Runtime priorities (bun/npm, uv, cargo)
+- AI model strategies (Gemini, DeepSeek, Claude)
+- Privacy-first architecture
+- Modular design patterns
+
+Future integrations:
+- aegnt-27 for AI authenticity
+- DailyDoco Pro for documentation
+- AegntiX for orchestration
+- Quick Data MCP for analytics
+
+## Quick Reference
+
+### Key Files
+- Entry: `4site-pro/project4site_-github-readme-to-site-generator/index.tsx`
+- Main App: `4site-pro/project4site_-github-readme-to-site-generator/App.tsx`
+- AI Service: `4site-pro/project4site_-github-readme-to-site-generator/services/geminiService.ts`
+- Templates: `4site-pro/project4site_-github-readme-to-site-generator/components/templates/`
+
+### Constants
+```typescript
+// From constants.ts
+export const SITE_TITLE = 'project4site';
+export const SITE_TAGLINE = 'Transform GitHub Repos into Professional Sites in 30 Seconds';
+export const GEMINI_MODEL_NAME = 'gemini-2.0-flash-exp';
+export const GEMINI_API_TIMEOUT_MS = 30000;
+export const GITHUB_API_BASE = 'https://api.github.com';
 ```
 
-## Integration Points
+### NPM Scripts (MVP)
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
 
-### With ae-co-system
-- Can leverage aegnt-27 for AI authenticity scoring
-- Integration with DailyDoco Pro for documentation generation
-- Shared AI model access patterns
-- Common MCP server infrastructure
-
-### External Services
-- GitHub API for repository access
-- Vercel API for deployments
-- Stripe for payment processing
-- Supabase for user management
-- Various design tool APIs (Figma, Canva, Adobe)
-
-## Global Development Rules
-
-### Rule 1: No Shortcuts or Simplification
-Never simplify or take shortcuts. Always problem-solve through complexity rather than avoiding it. Building sophisticated solutions is always preferred over easy workarounds.
-
-### Rule 2: Mandatory Human-Level Testing
-Before providing any terminal command or allowing user access, validate functionality using automated testing tools (Puppeteer, Playwright, etc.). If issues are found, use advanced reasoning tools to resolve them completely.
+This guide reflects the actual current state of the project, distinguishing clearly between what's implemented (MVP) and what's planned (full platform).
