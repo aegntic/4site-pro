@@ -456,6 +456,36 @@
   }
 }
 
+/* Responsive utilities */
+@media (max-width: 640px) {
+  .glass-container {
+    border-radius: 16px;
+  }
+  
+  .glass-card {
+    border-radius: 12px;
+  }
+  
+  .glass-step {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .glass-step-content {
+    font-size: 0.625rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .glass-container {
+    border-radius: 12px;
+  }
+  
+  .glass-card-content {
+    padding: 1rem !important;
+  }
+}
+
 /* Background gradient utilities */
 .gradient-mesh {
   position: fixed;

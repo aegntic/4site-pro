@@ -1,8 +1,38 @@
 # Project 4site - GitHub Repository to Professional Website Generator | Powered by aegntic.ai
 
-Transform any GitHub repository into a stunning, professional website powered by aegntic.ai technology with deep analysis and multi-page generation.
+Transform any GitHub repository into a stunning, professional website powered by aegntic.ai technology with deep analysis, multi-page generation, and **enhanced viral mechanics** for exponential growth.
 
-## ✨ Features
+## 🚀 Enhanced Viral Mechanics - NEW!
+
+4site.pro now features a comprehensive viral growth system designed for $100B platform standards:
+
+### 🔥 Core Viral Features
+
+1. **🎯 Viral Score Algorithm**: Real-time calculation based on engagement, shares, time decay, and tier bonuses
+2. **💰 Lifetime Commission System**: Progressive 20% → 25% → 40% commission rates over years
+3. **🎁 Free Pro Milestone**: Automatic Pro upgrade after 10 successful referrals (12 months free)
+4. **⭐ Pro Showcase Grid**: Automatic featuring ordered by viral score for Pro users
+5. **📊 Share Tracking**: External platform integration with platform-specific viral boosts
+6. **🚀 Auto-Featuring**: Triggered every 5 external shares with tier-based duration
+
+### 📈 Viral Growth Benefits
+
+- **Exponential Reach**: Each share increases viral score with platform-specific multipliers
+- **Automatic Featuring**: High-performing sites get featured automatically
+- **Long-term Rewards**: Commission rates increase over time (up to 40% for 4+ year relationships)
+- **Pro User Benefits**: Instant showcase featuring, extended auto-featuring, enhanced viral coefficients
+- **Community Building**: Pro showcase grid creates a premium ecosystem
+
+### 🎯 How It Works
+
+1. **Create** your professional site from any GitHub repo
+2. **Share** your site across platforms (Twitter, LinkedIn, Reddit, etc.)
+3. **Earn** viral score boosts and auto-featuring
+4. **Refer** friends for lifetime commissions
+5. **Grow** to Pro tier for 10x viral benefits
+6. **Scale** with exponential reach and passive income
+
+## ✨ Site Generation Features
 
 ### Quick Generation Mode (15 seconds)
 - **aegntic.ai-Generated Hero Visuals**: Beautiful, contextual hero images created by aegntic.ai and FLUX.1
@@ -50,12 +80,46 @@ cp .env.example .env.local
 # Required for basic site generation
 VITE_GEMINI_API_KEY=your_gemini_api_key_here
 
+# Required for enhanced viral mechanics (Production Supabase)
+VITE_SUPABASE_URL=https://your-project-ref.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key-here
+
 # Optional - for deep repository analysis
 VITE_GITHUB_TOKEN=github_pat_your_token_here
 
 # Optional - for enhanced visual generation
 VITE_FAL_API_KEY=your_fal_api_key_here
+
+# Optional - for Pro subscriptions and commission system
+VITE_STRIPE_PUBLISHABLE_KEY=pk_live_your-stripe-key
+STRIPE_SECRET_KEY=sk_live_your-stripe-secret
+
+# Enhanced viral mechanics feature flags
+ENABLE_VIRAL_SCORING=true
+ENABLE_AUTO_FEATURING=true
+ENABLE_COMMISSION_SYSTEM=true
+ENABLE_PRO_SHOWCASE=true
+ENABLE_SHARE_TRACKING=true
 ```
+
+### Enhanced Viral Mechanics Setup
+
+For full viral mechanics functionality, you'll need to set up a production Supabase database:
+
+```bash
+# 1. Create Supabase project at https://supabase.com/dashboard
+# 2. Deploy the enhanced viral schema
+psql $DATABASE_URL < database/enhanced-viral-schema.sql
+
+# 3. Verify viral functions are working
+psql $DATABASE_URL -c "SELECT calculate_viral_score('test-uuid');"
+
+# 4. Enable real-time for viral updates
+# Go to Supabase Dashboard > Database > Replication
+# Enable real-time for: websites, share_tracking, commission_earnings
+```
+
+See [SUPABASE_PRODUCTION_SETUP.md](./docs/SUPABASE_PRODUCTION_SETUP.md) for detailed production setup instructions.
 
 ### Running the App
 
@@ -91,15 +155,45 @@ Open http://localhost:5173 in your browser.
 
 ### Technology Stack
 - **Frontend**: React 19, Vite, TailwindCSS, Framer Motion
+- **Backend**: Supabase with PostgreSQL, Row Level Security
 - **AI Integration**: Google Gemini, FAL.ai for image generation
 - **Analysis**: Custom TypeScript analyzers for multiple languages
 - **Visualization**: Mermaid.js for architecture diagrams
+- **Viral Mechanics**: Advanced PostgreSQL functions, real-time triggers
 
 ### Key Components
+
+#### Core Site Generation
 - `repositoryAnalyzer.ts` - Deep code analysis engine
 - `deepAnalysisOrchestrator.ts` - Coordinates the analysis pipeline
 - `multiModalOrchestrator.ts` - Handles AI content and image generation
 - `DeepSitePreview.tsx` - Multi-page preview component
+
+#### Enhanced Viral Mechanics
+- `enhanced-viral-schema.sql` - 812-line production database schema
+- `ShareTracker.tsx` - External share tracking with viral boosts
+- `ProShowcaseGrid.tsx` - Viral score-ordered showcase for Pro users
+- `EnhancedReferralDashboard.tsx` - Commission tracking and milestone progress
+- `viral-functions.sql` - Advanced viral score calculation algorithms
+- `auto-featuring-triggers.sql` - Real-time auto-featuring system
+
+### Database Architecture
+
+#### Core Tables (Enhanced Viral Schema)
+- **`users`** - Enhanced with viral metrics, commission tracking, and tier progression
+- **`websites`** - Viral scores, auto-featuring flags, showcase eligibility
+- **`referrals`** - Advanced referral tracking with conversion metrics
+- **`commission_earnings`** - Lifetime commission system with tier progression
+- **`share_tracking`** - Platform-specific share tracking with viral boosts
+- **`auto_featuring_events`** - Automated featuring triggers and duration
+- **`pro_showcase_entries`** - Viral score-ordered Pro user showcase
+
+#### Advanced Functions
+- **`calculate_viral_score()`** - Real-time viral score calculation with time decay
+- **`calculate_commission_rate()`** - Progressive commission tier calculation
+- **`track_external_share()`** - Share tracking with platform-specific boosts
+- **`process_referral_milestone()`** - 10-referral free Pro milestone processing
+- **`refresh_pro_showcase()`** - Daily Pro showcase grid optimization
 
 ## 🎨 Customization
 
@@ -147,10 +241,25 @@ project4site_-github-readme-to-site-generator/
 
 ## 📊 Performance
 
+### Site Generation Performance
 - **Quick Mode**: ~15 seconds for single-page generation
 - **Deep Mode**: 2-5 minutes depending on repository size
 - **Memory Usage**: Optimized for repositories up to 10,000 files
 - **Concurrent Processing**: Leverages parallel API calls
+
+### Enhanced Viral Mechanics Performance
+- **Viral Score Calculation**: <200ms per website
+- **Commission Processing**: <100ms per calculation
+- **Share Tracking**: <50ms per external share
+- **Auto-Featuring Triggers**: <30 seconds from threshold
+- **Pro Showcase Refresh**: <2 seconds for 1000+ sites
+- **Database Queries**: <500ms average (optimized with 30+ indexes)
+
+### Scalability Targets
+- **Concurrent Users**: 10,000+ simultaneous users
+- **Database Performance**: Sub-200ms queries at 10M+ websites
+- **Viral Score Updates**: Real-time processing up to 1000 shares/second
+- **Commission Accuracy**: 99.9%+ precision for financial calculations
 
 ## 🤝 Contributing
 

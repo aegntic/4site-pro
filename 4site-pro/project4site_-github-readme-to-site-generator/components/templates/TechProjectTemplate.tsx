@@ -4,6 +4,11 @@ import { SiteData, PartnerToolRecommendation, Section } from '../../types';
 import { Card } from '../ui/Card';
 import { Icon } from '../ui/Icon';
 import { motion } from 'framer-motion';
+import { PoweredByFooter } from '../viral/PoweredByFooter';
+import { ProShowcaseGrid } from '../viral/ProShowcaseGrid';
+import ShareTracker from '../viral/ShareTracker';
+import { LeadCaptureWidget } from '../universal/LeadCaptureWidget';
+import { useAuth, usePermissions } from '../../contexts/AuthContext';
 
 interface TechProjectTemplateProps {
   siteData: SiteData;
@@ -45,6 +50,8 @@ const SectionCard: React.FC<{ section: Section, index: number }> = ({ section, i
 
 
 export const TechProjectTemplate: React.FC<TechProjectTemplateProps> = ({ siteData }) => {
+  const { userProfile } = useAuth();
+  const permissions = usePermissions();
   const mainContentSections = siteData.sections.filter(s => s.content.trim() !== '');
 
   return (
@@ -88,6 +95,42 @@ export const TechProjectTemplate: React.FC<TechProjectTemplateProps> = ({ siteDa
           </Card>
         </motion.div>
       )}
+      
+      {/* Share Tracker - allows external sharing and viral boost */}
+      <ShareTracker
+        websiteId={siteData.id || 'unknown'}
+        websiteUrl={siteData.githubUrl || window.location.href}
+        websiteTitle={siteData.title}
+        websiteDescription={siteData.description}
+        showShareCount={true}
+        compact={false}
+      />
+      
+      {/* Pro Showcase Grid - shows for all tiers except Enterprise opt-out */}
+      <ProShowcaseGrid 
+        currentSiteId={siteData.id}
+        userTier={userProfile?.subscription_tier || 'free'}
+        optOut={false} // Could be a user setting for Enterprise
+      />
+      
+      {/* Universal Lead Capture Widget - CRITICAL: Cannot be disabled, on every site */}
+      <LeadCaptureWidget
+        siteId={siteData.id || 'unknown'}
+        projectType="tech"
+        template="TechProjectTemplate"
+        position="bottom-right"
+        theme="dark"
+        compact={false}
+      />
+      
+      {/* Powered By Footer - shows for free tier users */}
+      <PoweredByFooter 
+        siteId={siteData.id || 'default'}
+        isPro={permissions.canRemoveBranding()}
+        referralCode={userProfile?.referral_code}
+        style="standard"
+        position="bottom-right"
+      />
     </div>
   );
 };

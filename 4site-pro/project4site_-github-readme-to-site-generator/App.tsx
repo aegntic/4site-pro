@@ -1,331 +1,218 @@
-
 import React, { useState, useCallback } from 'react';
-import { GlassHeroSection } from './components/landing/GlassHeroSection';
-import { GlassFeaturesSection } from './components/landing/GlassFeaturesSection';
-import { GlassDemoSection } from './components/landing/GlassDemoSection';
-import { GlassFooter } from './components/landing/GlassFooter';
-import { GlassLoadingIndicator } from './components/generator/GlassLoadingIndicator';
-import { LoadingIndicator } from './components/generator/LoadingIndicator';
-import { SitePreview } from './components/generator/SitePreview';
-import { EnhancedSitePreview } from './components/generator/EnhancedSitePreview';
-import { DeepSitePreview } from './components/generator/DeepSitePreview';
-import { DeepAnalysisProgress } from './components/generator/DeepAnalysisProgress';
-import { GenerationModeSelector } from './components/landing/GenerationModeSelector';
-import { Alert } from './components/ui/Alert';
-import { SetupModeSelector } from './components/setup/SetupModeSelector';
-import { AutoMode } from './components/modes/AutoMode';
-import { SelectStyleMode } from './components/modes/SelectStyleMode';
-import { CustomDesignMode } from './components/modes/CustomDesignMode';
-import { generateSiteContentFromUrl } from './services/geminiService';
-import { generateMultiModalSite, generateSiteWithRetry, GenerationProgress } from './services/multiModalOrchestrator';
-import { DeepAnalysisOrchestrator, DeepAnalysisProgress as DeepProgress, DeepSiteData } from './services/deepAnalysisOrchestrator';
-import { SiteData, AppState, Section, SetupMode } from './types';
 import { motion, AnimatePresence } from 'framer-motion';
-import { parseMarkdownToSections } from './services/markdownParser';
+import { generateSiteContentFromUrl } from './services/geminiService';
+import { generateDemoSite } from './services/demoService';
+import { SiteData, AppState } from './types';
+import './index.css';
+import './styles/glassmorphism.css';
 
 const App: React.FC = () => {
-  console.log('App component rendering...');
-  
   const [appState, setAppState] = useState<AppState>(AppState.Idle);
   const [siteData, setSiteData] = useState<SiteData | null>(null);
-  const [deepSiteData, setDeepSiteData] = useState<DeepSiteData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [repoUrl, setRepoUrl] = useState<string>('');
-  const [selectedMode, setSelectedMode] = useState<SetupMode | null>(null);
-  const [generationProgress, setGenerationProgress] = useState<GenerationProgress | null>(null);
-  const [deepAnalysisProgress, setDeepAnalysisProgress] = useState<DeepProgress | null>(null);
-  const [showGenerationMode, setShowGenerationMode] = useState(false);
-  const [pendingUrl, setPendingUrl] = useState<string>('');
+  const [loading, setLoading] = useState(false);
 
-  const handleModeSelect = useCallback((mode: SetupMode) => {
-    setSelectedMode(mode);
-    switch (mode) {
-      case SetupMode.Auto:
-        setAppState(AppState.AutoMode);
-        break;
-      case SetupMode.SelectStyle:
-        setAppState(AppState.SelectStyle);
-        break;
-      case SetupMode.CustomDesign:
-        setAppState(AppState.CustomDesign);
-        break;
-    }
-  }, []);
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!repoUrl.trim()) return;
 
-  const handleSkipToClassic = useCallback(() => {
-    setAppState(AppState.Idle);
-    setSelectedMode(null);
-  }, []);
-
-  const handleBackToModeSelection = useCallback(() => {
-    setAppState(AppState.ModeSelection);
-    setSelectedMode(null);
-    setError(null);
-    setSiteData(null);
-  }, []);
-
-  const handleGenerateSite = useCallback((url: string) => {
-    if (!url.trim()) {
-      setError("Please enter a valid GitHub repository URL.");
+    // Check for API key
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    if (!apiKey || apiKey === 'PLACEHOLDER_API_KEY') {
+      setError('Gemini API key not configured. Please set VITE_GEMINI_API_KEY in your .env.local file.');
+      setAppState(AppState.Error);
       return;
     }
-    // Store the URL and show generation mode selector
-    setPendingUrl(url);
-    setShowGenerationMode(true);
-  }, []);
 
-  const handleGenerationModeSelect = useCallback(async (mode: 'quick' | 'deep') => {
-    setShowGenerationMode(false);
-    setRepoUrl(pendingUrl);
+    setLoading(true);
     setError(null);
-    setSiteData(null);
-    setDeepSiteData(null);
-    setGenerationProgress(null);
-    setDeepAnalysisProgress(null);
+    setAppState(AppState.Loading);
 
-    if (mode === 'quick') {
-      // Quick generation (existing logic)
-      setAppState(AppState.Loading);
-      try {
-        console.log('Starting enhanced site generation with AI visuals...');
-        const siteData = await generateSiteWithRetry(pendingUrl, (progress) => {
-          setGenerationProgress(progress);
-        });
-        
-        setSiteData(siteData);
-        setAppState(AppState.Success);
-        setGenerationProgress(null);
-      } catch (err) {
-        console.error("Error generating site:", err);
-        const errorMessage = err instanceof Error ? err.message : "An unknown error occurred while generating the site.";
-        
-        // If all attempts fail, try basic generation as final fallback
-        console.log('All enhanced attempts failed, trying basic generation...');
-        setError(null);
-        setGenerationProgress({ stage: 'content', progress: 10, message: 'Falling back to basic generation...' });
-        
-        try {
-          const markdown = await generateSiteContentFromUrl(pendingUrl);
-          const sections = parseMarkdownToSections(markdown);
-          const projectName = pendingUrl.split('/').pop() || 'Project';
-          
-          const basicSiteData: SiteData = {
-            id: Date.now().toString(),
-            title: projectName,
-            repoUrl: pendingUrl,
-            generatedMarkdown: markdown,
-            sections,
-            template: 'TechProjectTemplate',
-            tier: 'free'
-          };
-          
-          setSiteData(basicSiteData);
-          setAppState(AppState.Success);
-          setGenerationProgress(null);
-          return;
-        } catch (fallbackErr) {
-          console.error("Basic generation also failed:", fallbackErr);
-        }
-        
-        setError(`Failed to generate site: ${errorMessage}`);
-        setAppState(AppState.Error);
-        setGenerationProgress(null);
-      }
-    } else {
-      // Deep analysis mode
-      setAppState(AppState.Loading);
-      try {
-        console.log('Starting deep repository analysis...');
-        const deepAnalyzer = new DeepAnalysisOrchestrator(import.meta.env.VITE_GITHUB_TOKEN);
-        const deepData = await deepAnalyzer.generateDeepSite(pendingUrl, (progress) => {
-          setDeepAnalysisProgress(progress);
-        });
-        
-        setDeepSiteData(deepData);
-        setAppState(AppState.Success);
-        setDeepAnalysisProgress(null);
-      } catch (err) {
-        console.error("Deep analysis failed:", err);
-        const errorMessage = err instanceof Error ? err.message : "Deep analysis failed. Please try quick generation instead.";
-        setError(errorMessage);
-        setAppState(AppState.Error);
-        setDeepAnalysisProgress(null);
-      }
+    try {
+      const data = await generateSiteContentFromUrl(repoUrl);
+      setSiteData(data);
+      setAppState(AppState.Success);
+    } catch (err) {
+      console.error('Generation error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to generate site');
+      setAppState(AppState.Error);
+    } finally {
+      setLoading(false);
     }
-  }, [pendingUrl]);
+  }, [repoUrl]);
 
-  const handleSiteGenerated = useCallback((generatedSiteData: SiteData) => {
-    setSiteData(generatedSiteData);
-    setAppState(AppState.Success);
-  }, []);
-
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     setAppState(AppState.Idle);
     setSiteData(null);
-    setDeepSiteData(null);
     setError(null);
     setRepoUrl('');
-    setSelectedMode(null);
-    setGenerationProgress(null);
-    setDeepAnalysisProgress(null);
-    setPendingUrl('');
-  };
-
-  const handleShowModeSelection = () => {
-    setAppState(AppState.ModeSelection);
-  };
-
-  console.log('App render - appState:', appState);
+  }, []);
 
   return (
-    <div className="min-h-screen flex flex-col bg-gh-bg-primary text-gh-text-primary relative overflow-hidden">
-      <AnimatePresence mode="wait">
+    <div className="min-h-screen bg-black text-white overflow-hidden">
+      {/* Premium Background */}
+      <div className="fixed inset-0 z-0">
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-blue-900/20 to-black" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,215,0,0.1)_0%,transparent_70%)]" />
+      </div>
+
+      {/* Main Content */}
+      <div className="relative z-10">
+        {/* Navigation */}
+        <nav className="sticky top-0 z-50 backdrop-blur-xl bg-black/30 border-b border-white/10">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between h-16">
+              <div className="flex items-center space-x-3">
+                <img 
+                  src="/4sitepro-logo.png" 
+                  alt="4site.pro" 
+                  className="w-8 h-8 rounded-lg"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+                <span className="text-xl font-bold bg-gradient-to-r from-white to-yellow-400 bg-clip-text text-transparent">
+                  project4site
+                </span>
+              </div>
+              <div className="flex items-center space-x-4">
+                <button className="px-4 py-2 text-sm font-medium text-white/70 hover:text-white transition-colors">
+                  Features
+                </button>
+                <button className="px-4 py-2 text-sm font-medium text-white/70 hover:text-white transition-colors">
+                  Pricing
+                </button>
+                <button className="px-4 py-2 text-sm font-medium rounded-lg bg-gradient-to-r from-yellow-400 to-orange-500 text-black hover:shadow-lg hover:shadow-yellow-400/25 transition-all">
+                  Get Started
+                </button>
+              </div>
+            </div>
+          </div>
+        </nav>
+
         {appState === AppState.Idle && (
-          <motion.div
-            key="idle"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
-            className="flex-grow flex flex-col"
-          >
-            <GlassHeroSection onGenerateSite={handleGenerateSite} onShowModeSelection={handleShowModeSelection} />
-            <GlassFeaturesSection />
-            <GlassDemoSection />
-          </motion.div>
-        )}
+          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+            {/* Hero Section */}
+            <motion.section 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center mb-20"
+            >
+              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold mb-6">
+                <span className="bg-gradient-to-r from-white via-yellow-200 to-yellow-400 bg-clip-text text-transparent">
+                  Transform GitHub Repos
+                </span>
+                <br />
+                <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+                  Into Premium Websites
+                </span>
+              </h1>
+              <p className="text-xl text-white/60 mb-12 max-w-3xl mx-auto">
+                AI-powered site generation that creates stunning, production-ready websites 
+                from your GitHub repositories in under 30 seconds.
+              </p>
 
-        {appState === AppState.ModeSelection && (
-          <motion.div
-            key="mode-selection"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <SetupModeSelector
-              onModeSelect={handleModeSelect}
-              onSkipToClassic={handleSkipToClassic}
-            />
-          </motion.div>
-        )}
+              {/* Input Form */}
+              <form onSubmit={handleSubmit} className="max-w-2xl mx-auto">
+                <div className="relative group">
+                  <div className="absolute -inset-1 bg-gradient-to-r from-yellow-400 via-orange-500 to-pink-500 rounded-2xl blur opacity-25 group-hover:opacity-75 transition duration-1000"></div>
+                  <div className="relative flex items-center backdrop-blur-xl bg-white/5 rounded-2xl border border-white/10 p-2">
+                    <input
+                      type="url"
+                      value={repoUrl}
+                      onChange={(e) => setRepoUrl(e.target.value)}
+                      placeholder="Enter GitHub repository URL..."
+                      className="flex-1 bg-transparent px-6 py-4 text-white placeholder-white/40 focus:outline-none"
+                      disabled={loading}
+                    />
+                    <button
+                      type="submit"
+                      disabled={loading || !repoUrl.trim()}
+                      className="px-8 py-4 bg-gradient-to-r from-yellow-400 to-orange-500 text-black font-semibold rounded-xl hover:shadow-lg hover:shadow-yellow-400/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {loading ? 'Generating...' : 'Generate Site'}
+                    </button>
+                  </div>
+                </div>
+              </form>
 
-        {appState === AppState.AutoMode && (
-          <motion.div
-            key="auto-mode"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <AutoMode
-              onSiteGenerated={handleSiteGenerated}
-              onBack={handleBackToModeSelection}
-            />
-          </motion.div>
-        )}
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mt-4 p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400"
+                >
+                  {error}
+                </motion.div>
+              )}
+            </motion.section>
 
-        {appState === AppState.SelectStyle && (
-          <motion.div
-            key="select-style"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <SelectStyleMode
-              onSiteGenerated={handleSiteGenerated}
-              onBack={handleBackToModeSelection}
-            />
-          </motion.div>
-        )}
-
-        {appState === AppState.CustomDesign && (
-          <motion.div
-            key="custom-design"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <CustomDesignMode
-              onSiteGenerated={handleSiteGenerated}
-              onBack={handleBackToModeSelection}
-            />
-          </motion.div>
+            {/* Features Grid */}
+            <motion.section
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-20"
+            >
+              {[
+                { icon: '⚡', title: 'Lightning Fast', desc: 'Generate complete websites in under 30 seconds' },
+                { icon: '🎨', title: 'Premium Design', desc: 'Beautiful, modern templates with glass morphism UI' },
+                { icon: '🤖', title: 'AI-Powered', desc: 'Advanced AI analyzes your code and creates perfect content' },
+                { icon: '📱', title: 'Fully Responsive', desc: 'Looks perfect on all devices, from mobile to 8K displays' },
+                { icon: '🚀', title: 'Deploy Anywhere', desc: 'Export to Vercel, Netlify, or download the code' },
+                { icon: '🔒', title: 'Enterprise Security', desc: 'SOC2 compliant with end-to-end encryption' }
+              ].map((feature, i) => (
+                <motion.div
+                  key={i}
+                  whileHover={{ scale: 1.05, y: -5 }}
+                  className="backdrop-blur-xl bg-white/5 rounded-2xl border border-white/10 p-8 hover:bg-white/10 transition-all"
+                >
+                  <div className="text-4xl mb-4">{feature.icon}</div>
+                  <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
+                  <p className="text-white/60">{feature.desc}</p>
+                </motion.div>
+              ))}
+            </motion.section>
+          </main>
         )}
 
         {appState === AppState.Loading && (
-          <motion.div
-            key="loading"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="flex-grow flex items-center justify-center p-4"
-          >
-            {deepAnalysisProgress ? (
-              <DeepAnalysisProgress progress={deepAnalysisProgress} />
-            ) : (
-              <GlassLoadingIndicator 
-                message="Crafting your enhanced project site with aegntic.ai-generated visuals..." 
-                progress={generationProgress || undefined}
-              />
-            )}
-          </motion.div>
+          <div className="flex items-center justify-center min-h-screen">
+            <div className="text-center">
+              <div className="w-16 h-16 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-xl text-white/60">Analyzing repository...</p>
+            </div>
+          </div>
         )}
 
-        {(appState === AppState.Success || appState === AppState.Error) && (siteData || deepSiteData) && (
-           <motion.div
-            key="success"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.5 }}
-            className="flex-grow"
-          >
-            {deepSiteData ? (
-              <DeepSitePreview siteData={deepSiteData} onReset={handleReset} error={error} />
-            ) : siteData?.visuals ? (
-              <EnhancedSitePreview siteData={siteData} onReset={handleReset} error={error} />
-            ) : siteData ? (
-              <SitePreview siteData={siteData} onReset={handleReset} error={error} />
-            ) : null}
-          </motion.div>
-        )}
-        
-        {/* Error state without siteData or deepSiteData (e.g. initial URL validation error or catastrophic failure) */}
-        {appState === AppState.Error && !siteData && !deepSiteData && (
-          <motion.div
-            key="error_full"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
-            className="flex-grow flex flex-col items-center justify-center p-4"
-          >
-            <div className="max-w-md w-full">
-              <Alert type="error" message={error || "An unexpected error occurred."} />
-              <button
-                onClick={handleReset}
-                className="mt-4 w-full bg-primary hover:bg-primary-dark text-primary-foreground font-semibold py-2 px-4 rounded-lg transition-colors duration-150"
-              >
-                Try Again
-              </button>
+        {appState === AppState.Success && siteData && (
+          <div className="max-w-7xl mx-auto px-4 py-20">
+            <div className="text-center mb-10">
+              <h2 className="text-4xl font-bold mb-4">Your site is ready!</h2>
+              <p className="text-xl text-white/60">Preview your generated website below</p>
             </div>
-          </motion.div>
+            <div className="backdrop-blur-xl bg-white/5 rounded-2xl border border-white/10 p-8 mb-8">
+              <h3 className="text-2xl font-semibold mb-4">{siteData.title}</h3>
+              <p className="text-white/60 mb-6">{siteData.description}</p>
+              <div className="flex gap-4">
+                <button className="px-6 py-3 bg-gradient-to-r from-yellow-400 to-orange-500 text-black font-semibold rounded-lg">
+                  Deploy to Vercel
+                </button>
+                <button className="px-6 py-3 bg-white/10 text-white font-semibold rounded-lg hover:bg-white/20 transition-colors">
+                  Download Code
+                </button>
+                <button 
+                  onClick={handleReset}
+                  className="px-6 py-3 text-white/60 hover:text-white transition-colors"
+                >
+                  Generate Another
+                </button>
+              </div>
+            </div>
+          </div>
         )}
-      </AnimatePresence>
-      
-      {/* Generation Mode Selector Modal */}
-      {showGenerationMode && (
-        <GenerationModeSelector
-          onSelectMode={handleGenerationModeSelect}
-          onClose={() => setShowGenerationMode(false)}
-        />
-      )}
-      
-      {(appState === AppState.Idle || appState === AppState.Error) && <GlassFooter />}
+      </div>
     </div>
   );
 };

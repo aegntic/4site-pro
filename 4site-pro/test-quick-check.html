@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4site.pro Quick Check</title>
+</head>
+<body>
+    <h1>Testing 4site.pro Connection</h1>
+    <iframe 
+        src="http://localhost:5176" 
+        style="width: 100%; height: 600px; border: 2px solid #333;"
+        id="testFrame">
+    </iframe>
+    
+    <script>
+        const iframe = document.getElementById('testFrame');
+        
+        iframe.onload = () => {
+            console.log('✅ Website loaded successfully!');
+            document.body.style.background = '#d4edda';
+        };
+        
+        iframe.onerror = () => {
+            console.error('❌ Failed to load website');
+            document.body.style.background = '#f8d7da';
+        };
+        
+        // Also try to fetch
+        fetch('http://localhost:5176')
+            .then(response => {
+                console.log('Fetch response:', response.status);
+                return response.text();
+            })
+            .then(html => {
+                console.log('HTML length:', html.length);
+                if (html.length > 0) {
+                    document.querySelector('h1').textContent = '✅ 4site.pro is RUNNING!';
+                }
+            })
+            .catch(err => {
+                console.error('Fetch error:', err);
+                document.querySelector('h1').textContent = '❌ Connection Error';
+            });
+    </script>
+</body>
+</html>

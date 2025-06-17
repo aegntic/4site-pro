@@ -7,6 +7,14 @@
 
 ## 🎨 Latest Updates (June 2025)
 
+### 🔥 Enhanced Viral Mechanics System (NEW!)
+- **Lifetime Commission System**: Earn 20%→25%→40% on all referrals forever
+- **Viral Score Algorithm**: Mathematical precision drives site featuring and discovery
+- **Free Pro Milestone**: Automatic upgrade after 10 successful referrals
+- **Real-time Share Tracking**: Track viral growth across all external platforms
+- **Pro Showcase Grid**: Premium sites ordered by viral performance and engagement
+- **Commission Dashboard**: Real-time earnings, referral analytics, and payout tracking
+
 ### ✨ Glass Morphism UI Transformation
 - **Stunning Glass Effects**: Complete UI overhaul with sophisticated glass morphism design
 - **Animated Backgrounds**: Dynamic gradient mesh with parallax floating elements

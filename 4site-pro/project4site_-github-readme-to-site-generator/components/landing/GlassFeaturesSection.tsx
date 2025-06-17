@@ -66,7 +66,7 @@ const features = [
 
 export const GlassFeaturesSection: React.FC = () => {
   return (
-    <section className="py-24 px-4 relative">
+    <section className="py-12 sm:py-16 lg:py-24 px-4 sm:px-6 lg:px-8 relative">
       {/* Background gradient */}
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/10 to-transparent" />
       
@@ -76,18 +76,18 @@ export const GlassFeaturesSection: React.FC = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-center mb-16"
+          className="text-center mb-12 sm:mb-16"
         >
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-3 sm:mb-4">
             Features That
             <span className="bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent"> Empower</span>
           </h2>
-          <p className="text-lg text-white/70 max-w-2xl mx-auto">
+          <p className="text-base sm:text-lg text-white/70 max-w-2xl mx-auto px-4">
             Everything you need to transform your GitHub repository into a stunning, professional website.
           </p>
         </motion.div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {features.map((feature, index) => (
             <motion.div
               key={feature.title}
@@ -97,9 +97,9 @@ export const GlassFeaturesSection: React.FC = () => {
               transition={{ duration: 0.6, delay: index * 0.1 }}
               className="glass-card group"
             >
-              <div className="glass-card-content p-8">
+              <div className="glass-card-content p-4 sm:p-6 lg:p-8">
                 {/* Icon container */}
-                <div className="relative w-16 h-16 mb-6">
+                <div className="relative w-12 h-12 sm:w-16 sm:h-16 mb-4 sm:mb-6">
                   <div className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} rounded-2xl blur-xl opacity-50 group-hover:opacity-80 transition-opacity`} />
                   <div className="relative glass-icon">
                     <div className="glass-icon-shadow" />
@@ -110,10 +110,10 @@ export const GlassFeaturesSection: React.FC = () => {
                 </div>
 
                 {/* Content */}
-                <h3 className="text-xl font-semibold text-white mb-3 group-hover:text-white/90 transition-colors">
+                <h3 className="text-lg sm:text-xl font-semibold text-white mb-2 sm:mb-3 group-hover:text-white/90 transition-colors">
                   {feature.title}
                 </h3>
-                <p className="text-white/70 leading-relaxed">
+                <p className="text-sm sm:text-base text-white/70 leading-relaxed">
                   {feature.description}
                 </p>
 
