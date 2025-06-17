@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { generateSiteContentFromUrl } from './services/geminiService';
 import { generateDemoSite } from './services/demoService';
 import { SiteData, AppState } from './types';
+import { SimplePreviewTemplate } from './components/templates/SimplePreviewTemplate';
 import './index.css';
 import './styles/glassmorphism.css';
 
@@ -12,6 +13,7 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [repoUrl, setRepoUrl] = useState<string>('');
   const [loading, setLoading] = useState(false);
+  const [showDeployPopup, setShowDeployPopup] = useState(false);
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,6 +33,12 @@ const App: React.FC = () => {
 
     try {
       const data = await generateSiteContentFromUrl(repoUrl);
+      
+      // Ensure we have a valid SiteData object, not a string
+      if (!data || typeof data === 'string') {
+        throw new Error('Invalid response from content generator');
+      }
+      
       setSiteData(data);
       setAppState(AppState.Success);
     } catch (err) {
@@ -187,29 +195,92 @@ const App: React.FC = () => {
         )}
 
         {appState === AppState.Success && siteData && (
-          <div className="max-w-7xl mx-auto px-4 py-20">
-            <div className="text-center mb-10">
-              <h2 className="text-4xl font-bold mb-4">Your site is ready!</h2>
-              <p className="text-xl text-white/60">Preview your generated website below</p>
-            </div>
-            <div className="backdrop-blur-xl bg-white/5 rounded-2xl border border-white/10 p-8 mb-8">
-              <h3 className="text-2xl font-semibold mb-4">{siteData.title}</h3>
-              <p className="text-white/60 mb-6">{siteData.description}</p>
-              <div className="flex gap-4">
-                <button className="px-6 py-3 bg-gradient-to-r from-yellow-400 to-orange-500 text-black font-semibold rounded-lg">
-                  Deploy to Vercel
-                </button>
-                <button className="px-6 py-3 bg-white/10 text-white font-semibold rounded-lg hover:bg-white/20 transition-colors">
-                  Download Code
+          <div className="relative">
+            {/* Site Preview */}
+            <SimplePreviewTemplate siteData={siteData} />
+            
+            {/* Floating Action Bar */}
+            <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
+              <div className="backdrop-blur-xl bg-black/20 rounded-2xl border border-white/20 p-4 flex gap-3">
+                <button 
+                  onClick={() => setShowDeployPopup(true)}
+                  className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold rounded-lg hover:shadow-lg hover:shadow-green-500/25 transition-all"
+                >
+                  🚀 Deploy to GitHub Pages
                 </button>
                 <button 
                   onClick={handleReset}
-                  className="px-6 py-3 text-white/60 hover:text-white transition-colors"
+                  className="px-6 py-3 bg-white/10 text-white font-semibold rounded-lg hover:bg-white/20 transition-colors"
                 >
-                  Generate Another
+                  🔄 Retry
+                </button>
+                <button 
+                  onClick={() => setShowDeployPopup(true)}
+                  className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  ✏️ Edit
                 </button>
               </div>
             </div>
+
+            {/* Deployment Popup */}
+            <AnimatePresence>
+              {showDeployPopup && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                  onClick={() => setShowDeployPopup(false)}
+                >
+                  <motion.div
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.9, opacity: 0 }}
+                    className="backdrop-blur-xl bg-white/10 rounded-2xl border border-white/20 p-8 max-w-md w-full"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <h3 className="text-2xl font-bold text-white mb-6">Deploy Your Site</h3>
+                    
+                    <div className="space-y-4">
+                      <button className="w-full p-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:shadow-lg transition-all flex items-center justify-center gap-3">
+                        <span className="text-xl">🚀</span>
+                        <div className="text-left">
+                          <div className="font-semibold">Deploy to GitHub Pages</div>
+                          <div className="text-sm opacity-80">Free hosting on GitHub</div>
+                        </div>
+                      </button>
+                      
+                      <button className="w-full p-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-3">
+                        <span className="text-xl">✏️</span>
+                        <div className="text-left">
+                          <div className="font-semibold">Edit Site</div>
+                          <div className="text-sm opacity-80">Customize before deploying</div>
+                        </div>
+                      </button>
+                      
+                      <button 
+                        onClick={handleReset}
+                        className="w-full p-4 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors flex items-center justify-center gap-3"
+                      >
+                        <span className="text-xl">🔄</span>
+                        <div className="text-left">
+                          <div className="font-semibold">Generate Another</div>
+                          <div className="text-sm opacity-80">Try a different repository</div>
+                        </div>
+                      </button>
+                    </div>
+                    
+                    <button 
+                      onClick={() => setShowDeployPopup(false)}
+                      className="absolute top-4 right-4 text-white/60 hover:text-white text-xl"
+                    >
+                      ✕
+                    </button>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         )}
       </div>

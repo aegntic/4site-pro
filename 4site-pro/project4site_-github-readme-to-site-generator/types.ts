@@ -17,12 +17,22 @@ export interface PartnerToolRecommendation {
 export interface SiteData {
   id: string;
   title: string;
-  repoUrl: string;
+  description: string;      // Brief project description for hero section
+  content: string;          // Main content (compatibility field)
+  template: string;         // Template identifier (compatibility)
+  createdAt: Date;          // Creation timestamp (compatibility)
+  repoUrl: string;          // GitHub repository URL
+  githubUrl: string;        // Alias for repoUrl for compatibility
   generatedMarkdown: string; // The raw Markdown returned by Gemini
-  sections: Section[];
-  template: 'TechProjectTemplate' | 'CreativeProjectTemplate'; // Add more as needed
+  sections: Section[];      // Structured content sections
+  features: string[];       // Array of key features for preview
+  techStack: string[];      // Array of technologies used
+  projectType: 'tech' | 'creative' | 'business' | 'library' | 'tool' | 'other';
+  primaryColor: string;     // Main brand color derived from content
+  tier?: 'free' | 'select' | 'custom' | 'enhanced' | 'premium' | 'enterprise';
+  owner?: string;           // Repository owner
+  repo?: string;            // Repository name
   partnerToolRecommendations?: PartnerToolRecommendation[];
-  tier?: 'free' | 'select' | 'custom' | 'enhanced';
   deploymentOptions?: DeploymentOption[];
   mcpServerConfig?: MCPServerConfig;
   customizations?: SiteCustomizations;
