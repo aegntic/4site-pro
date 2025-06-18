@@ -1,5 +1,7 @@
 name: Deploy 4site.pro to GitHub Pages
 
+# Automated deployment for 4site.pro production site
+
 on:
   push:
     branches: [ main ]
