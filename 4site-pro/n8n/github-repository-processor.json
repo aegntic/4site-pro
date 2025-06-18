@@ -1,0 +1,327 @@
+{
+  "name": "github-repository-processor",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "triggerOn": "specificWorkflow",
+        "workflowId": "master-orchestrator"
+      },
+      "id": "workflow-trigger",
+      "name": "Workflow Trigger",
+      "type": "n8n-nodes-base.workflowTrigger",
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse GitHub URL to extract owner and repo\nconst githubUrl = $input.item(0).json.githubUrl;\nconst urlMatch = githubUrl.match(/github\\.com\\/([^/]+)\\/([^/]+)/); \n\nif (!urlMatch) {\n  throw new Error('Invalid GitHub URL format');\n}\n\nconst [, owner, repo] = urlMatch;\nconst cleanRepo = repo.replace(/\\.git$/, ''); // Remove .git suffix if present\n\nreturn {\n  owner,\n  repo: cleanRepo,\n  githubUrl,\n  jobId: $input.item(0).json.jobId,\n  userEmail: $input.item(0).json.userEmail,\n  planLevel: $input.item(0).json.planLevel\n};"
+      },
+      "id": "parse-github-url",
+      "name": "Parse GitHub URL",
+      "type": "n8n-nodes-base.code",
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.github.com/repos/{{$json['owner']}}/{{$json['repo']}}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "options": {
+          "timeout": 30000,
+          "retry": {
+            "enabled": true,
+            "maxTries": 3
+          }
+        }
+      },
+      "id": "fetch-repo-metadata",
+      "name": "Fetch Repository Metadata",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [680, 300],
+      "credentials": {
+        "githubApi": {
+          "id": "github-api",
+          "name": "GitHub API Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://api.github.com/repos/{{$json['owner']}}/{{$json['repo']}}/contents/README.md",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "options": {
+          "timeout": 15000,
+          "retry": {
+            "enabled": true,
+            "maxTries": 2
+          }
+        }
+      },
+      "id": "fetch-readme",
+      "name": "Fetch README.md",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [900, 200],
+      "credentials": {
+        "githubApi": {
+          "id": "github-api",
+          "name": "GitHub API Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://api.github.com/repos/{{$json['owner']}}/{{$json['repo']}}/contents/PLANNING.md",
+        "authentication": "predefinedCredentialType", 
+        "nodeCredentialType": "githubApi",
+        "options": {
+          "timeout": 15000,
+          "ignoreHttpStatusErrors": true
+        }
+      },
+      "id": "fetch-planning",
+      "name": "Fetch PLANNING.md",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [900, 300],
+      "credentials": {
+        "githubApi": {
+          "id": "github-api",
+          "name": "GitHub API Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://api.github.com/repos/{{$json['owner']}}/{{$json['repo']}}/contents/TASKS.md",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "options": {
+          "timeout": 15000,
+          "ignoreHttpStatusErrors": true
+        }
+      },
+      "id": "fetch-tasks",
+      "name": "Fetch TASKS.md",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [900, 400],
+      "credentials": {
+        "githubApi": {
+          "id": "github-api",
+          "name": "GitHub API Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://api.github.com/repos/{{$json['owner']}}/{{$json['repo']}}/contents/package.json",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "options": {
+          "timeout": 15000,
+          "ignoreHttpStatusErrors": true
+        }
+      },
+      "id": "fetch-package-json",
+      "name": "Fetch package.json",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [900, 500],
+      "credentials": {
+        "githubApi": {
+          "id": "github-api",
+          "name": "GitHub API Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge all fetched content and decode base64\nconst items = $input.all();\nconst result = {\n  jobId: items[0].json.jobId,\n  owner: items[0].json.owner,\n  repo: items[0].json.repo,\n  githubUrl: items[0].json.githubUrl,\n  userEmail: items[0].json.userEmail,\n  planLevel: items[0].json.planLevel,\n  repository: {},\n  content: {}\n};\n\n// Process repository metadata\nconst repoData = items.find(item => item.json.name && item.json.full_name);\nif (repoData) {\n  result.repository = {\n    name: repoData.json.name,\n    fullName: repoData.json.full_name,\n    description: repoData.json.description || '',\n    language: repoData.json.language || 'Unknown',\n    stars: repoData.json.stargazers_count || 0,\n    forks: repoData.json.forks_count || 0,\n    topics: repoData.json.topics || [],\n    createdAt: repoData.json.created_at,\n    updatedAt: repoData.json.updated_at\n  };\n}\n\n// Process content files\nconst contentFiles = ['README.md', 'PLANNING.md', 'TASKS.md', 'package.json'];\ncontentFiles.forEach(filename => {\n  const fileItem = items.find(item => \n    item.json.name === filename || \n    (item.json.download_url && item.json.download_url.includes(filename))\n  );\n  \n  if (fileItem && fileItem.json.content) {\n    try {\n      // Decode base64 content\n      const decodedContent = Buffer.from(fileItem.json.content, 'base64').toString('utf-8');\n      result.content[filename] = decodedContent;\n    } catch (error) {\n      console.log(`Failed to decode ${filename}:`, error.message);\n      result.content[filename] = null;\n    }\n  } else {\n    result.content[filename] = null;\n  }\n});\n\n// Extract tech stack from package.json\nif (result.content['package.json']) {\n  try {\n    const packageData = JSON.parse(result.content['package.json']);\n    result.techStack = {\n      dependencies: Object.keys(packageData.dependencies || {}),\n      devDependencies: Object.keys(packageData.devDependencies || {}),\n      scripts: Object.keys(packageData.scripts || {}),\n      framework: detectFramework(packageData)\n    };\n  } catch (error) {\n    result.techStack = { dependencies: [], devDependencies: [], scripts: [] };\n  }\n}\n\n// Detect framework from dependencies\nfunction detectFramework(packageData) {\n  const deps = { ...packageData.dependencies, ...packageData.devDependencies };\n  if (deps.react) return 'React';\n  if (deps.vue) return 'Vue.js';\n  if (deps.angular) return 'Angular';\n  if (deps['next']) return 'Next.js';\n  if (deps.express) return 'Express.js';\n  if (deps.fastify) return 'Fastify';\n  return 'Unknown';\n}\n\n// Generate content hash for caching\nconst contentStr = JSON.stringify(result.content);\nresult.contentHash = require('crypto').createHash('md5').update(contentStr).digest('hex');\n\nreturn result;"
+      },
+      "id": "merge-content",
+      "name": "Merge and Process Content",
+      "type": "n8n-nodes-base.code",
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "table": "site_generation_jobs",
+        "updateKey": "job_id",
+        "columns": "status, repository_data, content_data, content_hash, updated_at",
+        "additionalFields": {
+          "mode": "independently"
+        }
+      },
+      "id": "update-database",
+      "name": "Update Database",
+      "type": "n8n-nodes-base.postgres",
+      "position": [1340, 300],
+      "credentials": {
+        "postgres": {
+          "id": "postgres-main",
+          "name": "PostgreSQL Main Database"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowId": "ai-content-analyzer",
+        "waitForExecution": false
+      },
+      "id": "trigger-ai-analyzer",
+      "name": "Trigger AI Content Analyzer",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "position": [1560, 300]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "status",
+              "value": "github_processing_complete"
+            },
+            {
+              "name": "message",
+              "value": "Repository content extracted successfully"
+            }
+          ]
+        }
+      },
+      "id": "set-status",
+      "name": "Set Processing Status",
+      "type": "n8n-nodes-base.set",
+      "position": [1340, 200]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Parse GitHub URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse GitHub URL": {
+      "main": [
+        [
+          {
+            "node": "Fetch Repository Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Repository Metadata": {
+      "main": [
+        [
+          {
+            "node": "Fetch README.md",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch PLANNING.md",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch TASKS.md",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch package.json",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch README.md": {
+      "main": [
+        [
+          {
+            "node": "Merge and Process Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch PLANNING.md": {
+      "main": [
+        [
+          {
+            "node": "Merge and Process Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch TASKS.md": {
+      "main": [
+        [
+          {
+            "node": "Merge and Process Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch package.json": {
+      "main": [
+        [
+          {
+            "node": "Merge and Process Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge and Process Content": {
+      "main": [
+        [
+          {
+            "node": "Set Processing Status",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Update Database",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Database": {
+      "main": [
+        [
+          {
+            "node": "Trigger AI Content Analyzer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1.0.0",
+  "id": "github-repository-processor",
+  "tags": ["4site-pro", "github", "content-extraction"]
+}

@@ -1,0 +1,341 @@
+{
+  "name": "analytics-processor",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "triggerOn": "specificWorkflow",
+        "workflowId": "quality-assurance"
+      },
+      "id": "workflow-trigger",
+      "name": "Workflow Trigger",
+      "type": "n8n-nodes-base.workflowTrigger",
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare analytics data collection\nconst data = $input.item(0).json;\nconst qaResults = data.qaResults;\nconst siteData = data.finalSiteData;\nconst buildConfig = data.buildConfig;\n\n// Calculate processing metrics\nconst startTime = new Date(data.buildStarted || data.timestamp);\nconst endTime = new Date(qaResults.completedAt);\nconst totalProcessingTime = endTime.getTime() - startTime.getTime();\n\nconst analyticsData = {\n  jobId: data.jobId,\n  timestamp: new Date().toISOString(),\n  \n  // Site metrics\n  site: {\n    url: siteData.deployedUrl,\n    title: siteData.title,\n    projectType: siteData.projectType,\n    techStack: siteData.techStack,\n    templateUsed: buildConfig.template\n  },\n  \n  // User metrics\n  user: {\n    email: data.userEmail,\n    planLevel: data.planLevel,\n    isAnonymous: data.userEmail === 'anonymous@4site.pro'\n  },\n  \n  // Performance metrics\n  performance: {\n    totalProcessingTime: totalProcessingTime,\n    aiProcessingTime: null, // Will be calculated from database\n    buildTime: null, // Will be calculated from database\n    deploymentTime: null, // Will be calculated from database\n    qaScore: qaResults.overallScore,\n    qaDetails: qaResults.qualityMetrics\n  },\n  \n  // Business metrics\n  business: {\n    successful: qaResults.passed && data.status !== 'error',\n    conversionValue: calculateConversionValue(data.planLevel, qaResults.passed),\n    commissionEligible: qaResults.passed && data.planLevel !== 'free',\n    templatePopularity: buildConfig.template\n  },\n  \n  // Technical metrics\n  technical: {\n    aiProvider: data.aiProvider || 'gemini',\n    deploymentTargets: Object.keys(data.deploymentResults || {}),\n    primaryDeployment: data.dnsSetup?.primaryTarget?.provider,\n    errors: data.errors || []\n  }\n};\n\nfunction calculateConversionValue(planLevel, successful) {\n  if (!successful) return 0;\n  \n  switch (planLevel) {\n    case 'enterprise': return 299;\n    case 'pro': return 49;\n    case 'free': return 5; // Value of free conversion\n    default: return 0;\n  }\n}\n\nreturn {\n  ...data,\n  analyticsData\n};"
+      },
+      "id": "prepare-analytics",
+      "name": "Prepare Analytics Data",
+      "type": "n8n-nodes-base.code",
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "analytics_events",
+        "columns": "job_id, event_type, user_email, plan_level, site_url, project_type, template_used, processing_time, qa_score, conversion_value, successful, created_at",
+        "additionalFields": {
+          "mode": "independently"
+        }
+      },
+      "id": "log-analytics-event",
+      "name": "Log Analytics Event",
+      "type": "n8n-nodes-base.postgres",
+      "position": [680, 300],
+      "credentials": {
+        "postgres": {
+          "id": "postgres-main",
+          "name": "PostgreSQL Main Database"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://www.google-analytics.com/mp/collect",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  \"client_id\": $json.analyticsData.jobId,\n  \"events\": [{\n    \"name\": \"site_generated\",\n    \"parameters\": {\n      \"job_id\": $json.analyticsData.jobId,\n      \"plan_level\": $json.analyticsData.user.planLevel,\n      \"project_type\": $json.analyticsData.site.projectType,\n      \"template_used\": $json.analyticsData.site.templateUsed,\n      \"processing_time\": $json.analyticsData.performance.totalProcessingTime,\n      \"qa_score\": $json.analyticsData.performance.qaScore,\n      \"successful\": $json.analyticsData.business.successful,\n      \"conversion_value\": $json.analyticsData.business.conversionValue\n    }\n  }]\n} }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "send-google-analytics",
+      "name": "Send Google Analytics Event",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [680, 200]
+    },
+    {
+      "parameters": {
+        "url": "https://api.mixpanel.com/track",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Basic {{$credentials.mixpanelApi.token}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  \"event\": \"Site Generated\",\n  \"properties\": {\n    \"distinct_id\": $json.analyticsData.user.email,\n    \"job_id\": $json.analyticsData.jobId,\n    \"plan_level\": $json.analyticsData.user.planLevel,\n    \"project_type\": $json.analyticsData.site.projectType,\n    \"template_used\": $json.analyticsData.site.templateUsed,\n    \"processing_time_ms\": $json.analyticsData.performance.totalProcessingTime,\n    \"qa_score\": $json.analyticsData.performance.qaScore,\n    \"successful\": $json.analyticsData.business.successful,\n    \"conversion_value\": $json.analyticsData.business.conversionValue,\n    \"ai_provider\": $json.analyticsData.technical.aiProvider,\n    \"deployment_targets\": $json.analyticsData.technical.deploymentTargets.join(','),\n    \"primary_deployment\": $json.analyticsData.technical.primaryDeployment,\n    \"time\": Date.now()\n  }\n} }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "send-mixpanel-event",
+      "name": "Send Mixpanel Event",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [680, 400],
+      "credentials": {
+        "mixpanelApi": {
+          "id": "mixpanel-api",
+          "name": "Mixpanel Analytics API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Calculate commission tracking data\nconst data = $input.item(0).json;\nconst analyticsData = data.analyticsData;\n\nif (!analyticsData.business.commissionEligible) {\n  return {\n    ...data,\n    commissionData: null,\n    skipCommission: true\n  };\n}\n\n// Calculate commission based on plan level and success\nconst commissionData = {\n  jobId: data.jobId,\n  userEmail: analyticsData.user.email,\n  planLevel: analyticsData.user.planLevel,\n  conversionValue: analyticsData.business.conversionValue,\n  commissionRate: getCommissionRate(analyticsData.user.planLevel),\n  commissionAmount: calculateCommission(analyticsData.business.conversionValue, analyticsData.user.planLevel),\n  referralCode: null, // Extract from user data if available\n  partnerEmail: null, // Extract from referral tracking\n  successful: analyticsData.business.successful,\n  createdAt: new Date().toISOString()\n};\n\nfunction getCommissionRate(planLevel) {\n  switch (planLevel) {\n    case 'enterprise': return 0.20; // 20%\n    case 'pro': return 0.15; // 15%\n    default: return 0;\n  }\n}\n\nfunction calculateCommission(conversionValue, planLevel) {\n  const rate = getCommissionRate(planLevel);\n  return Math.round(conversionValue * rate * 100) / 100; // Round to 2 decimal places\n}\n\nreturn {\n  ...data,\n  commissionData\n};"
+      },
+      "id": "calculate-commission",
+      "name": "Calculate Commission",
+      "type": "n8n-nodes-base.code",
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json['skipCommission']}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "check-commission-eligibility",
+      "name": "Check Commission Eligibility",
+      "type": "n8n-nodes-base.if",
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "commission_tracking",
+        "columns": "job_id, user_email, plan_level, conversion_value, commission_rate, commission_amount, referral_code, partner_email, successful, created_at",
+        "additionalFields": {
+          "mode": "independently"
+        }
+      },
+      "id": "log-commission",
+      "name": "Log Commission",
+      "type": "n8n-nodes-base.postgres",
+      "position": [1340, 240],
+      "credentials": {
+        "postgres": {
+          "id": "postgres-main",
+          "name": "PostgreSQL Main Database"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate usage statistics and insights\nconst data = $input.item(0).json;\nconst analyticsData = data.analyticsData;\n\n// Query recent analytics data for trends (this would typically query database)\nconst usageStats = {\n  jobId: data.jobId,\n  timestamp: new Date().toISOString(),\n  \n  // Template usage statistics\n  template: {\n    name: analyticsData.site.templateUsed,\n    popularity: 0, // Would be calculated from database query\n    successRate: 0, // Would be calculated from database query\n    avgProcessingTime: 0 // Would be calculated from database query\n  },\n  \n  // User behavior insights\n  userInsights: {\n    planLevel: analyticsData.user.planLevel,\n    isRepeatUser: false, // Would be determined from database\n    avgQualityScore: analyticsData.performance.qaScore,\n    preferredProjectType: analyticsData.site.projectType\n  },\n  \n  // System performance insights\n  systemInsights: {\n    processingTime: analyticsData.performance.totalProcessingTime,\n    aiProvider: analyticsData.technical.aiProvider,\n    deploymentSuccess: analyticsData.business.successful,\n    qaScore: analyticsData.performance.qaScore\n  }\n};\n\nreturn {\n  ...data,\n  usageStats,\n  analyticsComplete: true,\n  processedAt: new Date().toISOString()\n};"
+      },
+      "id": "generate-insights",
+      "name": "Generate Usage Insights",
+      "type": "n8n-nodes-base.code",
+      "position": [1340, 360]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "table": "site_generation_jobs",
+        "updateKey": "job_id",
+        "columns": "status, analytics_data, usage_stats, updated_at",
+        "additionalFields": {
+          "mode": "independently"
+        }
+      },
+      "id": "update-database-final",
+      "name": "Update Database with Analytics",
+      "type": "n8n-nodes-base.postgres",
+      "position": [1560, 300],
+      "credentials": {
+        "postgres": {
+          "id": "postgres-main",
+          "name": "PostgreSQL Main Database"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{$json['webhookUrl'] || 'https://api.4site.pro/webhooks/analytics-complete'}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  jobId: $json.jobId,\n  status: 'complete',\n  analyticsData: $json.analyticsData,\n  usageStats: $json.usageStats,\n  commissionData: $json.commissionData,\n  siteUrl: $json.finalSiteData.deployedUrl,\n  completedAt: $json.processedAt\n} }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "notify-analytics-complete",
+      "name": "Notify Analytics Complete",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [1780, 300]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Prepare Analytics Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Analytics Data": {
+      "main": [
+        [
+          {
+            "node": "Send Google Analytics Event",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log Analytics Event",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Mixpanel Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Analytics Event": {
+      "main": [
+        [
+          {
+            "node": "Calculate Commission",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Google Analytics Event": {
+      "main": [
+        [
+          {
+            "node": "Calculate Commission",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Mixpanel Event": {
+      "main": [
+        [
+          {
+            "node": "Calculate Commission",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Commission": {
+      "main": [
+        [
+          {
+            "node": "Check Commission Eligibility",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Commission Eligibility": {
+      "main": [
+        [
+          {
+            "node": "Generate Usage Insights",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Commission",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Commission": {
+      "main": [
+        [
+          {
+            "node": "Generate Usage Insights",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Usage Insights": {
+      "main": [
+        [
+          {
+            "node": "Update Database with Analytics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Database with Analytics": {
+      "main": [
+        [
+          {
+            "node": "Notify Analytics Complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1.0.0",
+  "id": "analytics-processor",
+  "tags": ["4site-pro", "analytics", "commission", "tracking", "insights"]
+}

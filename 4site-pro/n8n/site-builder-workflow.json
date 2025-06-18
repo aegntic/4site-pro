@@ -1,0 +1,245 @@
+{
+  "name": "site-builder",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "triggerOn": "specificWorkflow",
+        "workflowId": "ai-content-analyzer"
+      },
+      "id": "workflow-trigger",
+      "name": "Workflow Trigger", 
+      "type": "n8n-nodes-base.workflowTrigger",
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare build environment configuration\nconst data = $input.item(0).json;\nconst siteData = data.siteData;\n\n// Generate unique build ID\nconst buildId = `build_${data.jobId}_${Date.now()}`;\n\n// Create build configuration\nconst buildConfig = {\n  buildId,\n  jobId: data.jobId,\n  projectName: siteData.title.toLowerCase().replace(/[^a-z0-9]/g, '-'),\n  template: selectTemplate(siteData.projectType, siteData.techStack),\n  siteData,\n  buildSettings: {\n    optimization: data.planLevel === 'enterprise' ? 'maximum' : 'standard',\n    bundleAnalysis: data.planLevel !== 'free',\n    sourceMap: data.planLevel === 'enterprise',\n    compression: true,\n    minification: true\n  },\n  deployment: {\n    targets: getDeploymentTargets(data.planLevel),\n    customDomain: data.planLevel !== 'free'\n  }\n};\n\n// Select appropriate template based on project analysis\nfunction selectTemplate(projectType, techStack) {\n  if (projectType === 'creative') {\n    return 'creative-project-template';\n  }\n  \n  // Check for specific frameworks\n  const stackStr = techStack.join(' ').toLowerCase();\n  if (stackStr.includes('react') || stackStr.includes('next')) {\n    return 'modern-react-template';\n  }\n  if (stackStr.includes('vue')) {\n    return 'vue-project-template';\n  }\n  if (stackStr.includes('python') || stackStr.includes('django') || stackStr.includes('flask')) {\n    return 'python-project-template';\n  }\n  \n  // Default to tech template\n  return 'tech-project-template';\n}\n\n// Determine deployment targets based on plan level\nfunction getDeploymentTargets(planLevel) {\n  switch (planLevel) {\n    case 'enterprise':\n      return ['github-pages', 'vercel', 'netlify', 'custom'];\n    case 'pro':\n      return ['github-pages', 'vercel', 'netlify'];\n    default:\n      return ['github-pages'];\n  }\n}\n\nreturn {\n  ...data,\n  buildConfig,\n  buildStarted: new Date().toISOString()\n};"
+      },
+      "id": "prepare-build-config",
+      "name": "Prepare Build Configuration",
+      "type": "n8n-nodes-base.code",
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "command": "=/tmp/4site-build-{{$json['buildConfig']['buildId']}}",
+        "additionalFlags": "--rm --name 4site-builder-{{$json['buildConfig']['buildId']}}",
+        "dockerImage": "node:18-alpine",
+        "volumes": {
+          "volume": [
+            {
+              "hostPath": "/var/4site-templates",
+              "containerPath": "/templates"
+            },
+            {
+              "hostPath": "/tmp/4site-builds",
+              "containerPath": "/builds"
+            }
+          ]
+        },
+        "environmentVariables": {
+          "variable": [
+            {
+              "name": "BUILD_ID",
+              "value": "={{$json['buildConfig']['buildId']}}"
+            },
+            {
+              "name": "TEMPLATE_TYPE", 
+              "value": "={{$json['buildConfig']['template']}}"
+            },
+            {
+              "name": "OPTIMIZATION_LEVEL",
+              "value": "={{$json['buildConfig']['buildSettings']['optimization']}}"
+            }
+          ]
+        },
+        "workingDirectory": "/builds",
+        "command": "sh -c 'mkdir -p /builds/$BUILD_ID && cd /builds/$BUILD_ID && cp -r /templates/$TEMPLATE_TYPE/* . && npm install --production'"
+      },
+      "id": "setup-build-container",
+      "name": "Setup Build Container",
+      "type": "n8n-nodes-base.docker",
+      "position": [680, 300],
+      "credentials": {
+        "docker": {
+          "id": "docker-local",
+          "name": "Local Docker"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate template-specific files\nconst data = $input.item(0).json;\nconst siteData = data.siteData;\nconst buildConfig = data.buildConfig;\n\n// Generate main App.tsx content\nconst appContent = generateAppComponent(siteData, buildConfig.template);\n\n// Generate component files\nconst components = generateComponents(siteData);\n\n// Generate package.json\nconst packageJson = generatePackageJson(siteData, buildConfig);\n\n// Generate index.html\nconst indexHtml = generateIndexHtml(siteData);\n\n// Generate vite.config.ts\nconst viteConfig = generateViteConfig(buildConfig.buildSettings);\n\nfunction generateAppComponent(siteData, template) {\n  return `import React from 'react';\nimport './App.css';\nimport HeroSection from './components/HeroSection';\nimport FeaturesSection from './components/FeaturesSection';\nimport TechStackSection from './components/TechStackSection';\nimport Footer from './components/Footer';\n\nconst siteData = ${JSON.stringify(siteData, null, 2)};\n\nfunction App() {\n  return (\n    <div className=\"app\" style={{ '--primary-color': '${siteData.primaryColor}' }}>\n      <HeroSection data={siteData} />\n      <FeaturesSection features={siteData.features} />\n      <TechStackSection techStack={siteData.techStack} />\n      <Footer githubUrl={siteData.githubUrl} />\n    </div>\n  );\n}\n\nexport default App;`;\n}\n\nfunction generateComponents(siteData) {\n  return {\n    'HeroSection.tsx': generateHeroComponent(siteData),\n    'FeaturesSection.tsx': generateFeaturesComponent(),\n    'TechStackSection.tsx': generateTechStackComponent(),\n    'Footer.tsx': generateFooterComponent()\n  };\n}\n\nfunction generateHeroComponent(siteData) {\n  return `import React from 'react';\nimport { ExternalLink, Star, GitFork } from 'lucide-react';\n\ninterface HeroSectionProps {\n  data: any;\n}\n\nconst HeroSection: React.FC<HeroSectionProps> = ({ data }) => {\n  return (\n    <section className=\"hero-section\">\n      <div className=\"container\">\n        <h1 className=\"hero-title\">{data.title}</h1>\n        <p className=\"hero-description\">{data.description}</p>\n        <div className=\"hero-actions\">\n          <a href={data.githubUrl} className=\"btn btn-primary\" target=\"_blank\" rel=\"noopener\">\n            <ExternalLink size={20} />\n            {data.callToAction.primary}\n          </a>\n          <a href={data.githubUrl + '/stargazers'} className=\"btn btn-secondary\" target=\"_blank\" rel=\"noopener\">\n            <Star size={20} />\n            {data.callToAction.secondary}\n          </a>\n        </div>\n      </div>\n    </section>\n  );\n};\n\nexport default HeroSection;`;\n}\n\nfunction generateFeaturesComponent() {\n  return `import React from 'react';\nimport { Check } from 'lucide-react';\n\ninterface FeaturesSectionProps {\n  features: string[];\n}\n\nconst FeaturesSection: React.FC<FeaturesSectionProps> = ({ features }) => {\n  return (\n    <section className=\"features-section\">\n      <div className=\"container\">\n        <h2>Key Features</h2>\n        <div className=\"features-grid\">\n          {features.map((feature, index) => (\n            <div key={index} className=\"feature-item\">\n              <Check className=\"feature-icon\" size={24} />\n              <span>{feature}</span>\n            </div>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n};\n\nexport default FeaturesSection;`;\n}\n\nfunction generateTechStackComponent() {\n  return `import React from 'react';\nimport { Code2 } from 'lucide-react';\n\ninterface TechStackSectionProps {\n  techStack: string[];\n}\n\nconst TechStackSection: React.FC<TechStackSectionProps> = ({ techStack }) => {\n  return (\n    <section className=\"tech-stack-section\">\n      <div className=\"container\">\n        <h2>Built With</h2>\n        <div className=\"tech-stack-grid\">\n          {techStack.map((tech, index) => (\n            <div key={index} className=\"tech-item\">\n              <Code2 size={20} />\n              <span>{tech}</span>\n            </div>\n          ))}\n        </div>\n      </div>\n    </section>\n  );\n};\n\nexport default TechStackSection;`;\n}\n\nfunction generateFooterComponent() {\n  return `import React from 'react';\nimport { Github } from 'lucide-react';\n\ninterface FooterProps {\n  githubUrl: string;\n}\n\nconst Footer: React.FC<FooterProps> = ({ githubUrl }) => {\n  return (\n    <footer className=\"footer\">\n      <div className=\"container\">\n        <div className=\"footer-content\">\n          <p>Generated by 4site.pro</p>\n          <a href={githubUrl} target=\"_blank\" rel=\"noopener\">\n            <Github size={24} />\n          </a>\n        </div>\n      </div>\n    </footer>\n  );\n};\n\nexport default Footer;`;\n}\n\nfunction generatePackageJson(siteData, buildConfig) {\n  return {\n    name: buildConfig.projectName,\n    version: '1.0.0',\n    type: 'module',\n    scripts: {\n      dev: 'vite',\n      build: 'tsc && vite build',\n      preview: 'vite preview'\n    },\n    dependencies: {\n      react: '^18.2.0',\n      'react-dom': '^18.2.0',\n      'lucide-react': '^0.513.0'\n    },\n    devDependencies: {\n      '@types/react': '^18.2.43',\n      '@types/react-dom': '^18.2.17', \n      '@vitejs/plugin-react': '^4.2.1',\n      typescript: '^5.2.2',\n      vite: '^5.0.8'\n    }\n  };\n}\n\nfunction generateIndexHtml(siteData) {\n  return `<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"UTF-8\" />\n    <link rel=\"icon\" type=\"image/svg+xml\" href=\"/vite.svg\" />\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n    <title>${siteData.title}</title>\n    <meta name=\"description\" content=\"${siteData.description}\" />\n    <meta name=\"keywords\" content=\"${siteData.seoKeywords.join(', ')}\" />\n    <meta property=\"og:title\" content=\"${siteData.title}\" />\n    <meta property=\"og:description\" content=\"${siteData.description}\" />\n    <meta property=\"og:url\" content=\"${siteData.githubUrl}\" />\n    <meta name=\"twitter:card\" content=\"summary_large_image\" />\n  </head>\n  <body>\n    <div id=\"root\"></div>\n    <script type=\"module\" src=\"/src/main.tsx\"></script>\n  </body>\n</html>`;\n}\n\nfunction generateViteConfig(buildSettings) {\n  return `import { defineConfig } from 'vite';\nimport react from '@vitejs/plugin-react';\n\nexport default defineConfig({\n  plugins: [react()],\n  build: {\n    minify: ${buildSettings.minification},\n    sourcemap: ${buildSettings.sourceMap},\n    rollupOptions: {\n      output: {\n        manualChunks: {\n          vendor: ['react', 'react-dom'],\n          icons: ['lucide-react']\n        }\n      }\n    }\n  },\n  server: {\n    port: 3000\n  }\n});`;\n}\n\nreturn {\n  ...data,\n  generatedFiles: {\n    'src/App.tsx': appContent,\n    'src/components/HeroSection.tsx': components['HeroSection.tsx'],\n    'src/components/FeaturesSection.tsx': components['FeaturesSection.tsx'],\n    'src/components/TechStackSection.tsx': components['TechStackSection.tsx'],\n    'src/components/Footer.tsx': components['Footer.tsx'],\n    'package.json': JSON.stringify(packageJson, null, 2),\n    'index.html': indexHtml,\n    'vite.config.ts': viteConfig\n  },\n  filesGenerated: new Date().toISOString()\n};"
+      },
+      "id": "generate-files",
+      "name": "Generate Site Files",
+      "type": "n8n-nodes-base.code",
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "command": "sh -c 'cd /builds/{{$json[\"buildConfig\"][\"buildId\"]}} && echo \"{{$json[\"generatedFiles\"][\"package.json\"]}}\" > package.json && mkdir -p src/components && echo \"{{$json[\"generatedFiles\"][\"src/App.tsx\"]}}\" > src/App.tsx && echo \"{{$json[\"generatedFiles\"][\"index.html\"]}}\" > index.html && echo \"{{$json[\"generatedFiles\"][\"vite.config.ts\"]}}\" > vite.config.ts'",
+        "dockerImage": "node:18-alpine",
+        "volumes": {
+          "volume": [
+            {
+              "hostPath": "/tmp/4site-builds",
+              "containerPath": "/builds"
+            }
+          ]
+        }
+      },
+      "id": "write-files",
+      "name": "Write Files to Container",
+      "type": "n8n-nodes-base.docker",
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "command": "sh -c 'cd /builds/{{$json[\"buildConfig\"][\"buildId\"]}} && npm run build'",
+        "dockerImage": "node:18-alpine",
+        "volumes": {
+          "volume": [
+            {
+              "hostPath": "/tmp/4site-builds",
+              "containerPath": "/builds"
+            }
+          ]
+        },
+        "environmentVariables": {
+          "variable": [
+            {
+              "name": "NODE_ENV",
+              "value": "production"
+            }
+          ]
+        }
+      },
+      "id": "build-site",
+      "name": "Build Site",
+      "type": "n8n-nodes-base.docker",
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "table": "site_generation_jobs",
+        "updateKey": "job_id",
+        "columns": "status, build_config, updated_at",
+        "additionalFields": {
+          "mode": "independently"
+        }
+      },
+      "id": "update-database",
+      "name": "Update Database",
+      "type": "n8n-nodes-base.postgres",
+      "position": [1560, 300],
+      "credentials": {
+        "postgres": {
+          "id": "postgres-main",
+          "name": "PostgreSQL Main Database"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowId": "deployment-manager",
+        "waitForExecution": false
+      },
+      "id": "trigger-deployment",
+      "name": "Trigger Deployment Manager",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "position": [1780, 300]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Prepare Build Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Build Configuration": {
+      "main": [
+        [
+          {
+            "node": "Setup Build Container",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Setup Build Container": {
+      "main": [
+        [
+          {
+            "node": "Generate Site Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Site Files": {
+      "main": [
+        [
+          {
+            "node": "Write Files to Container",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Files to Container": {
+      "main": [
+        [
+          {
+            "node": "Build Site",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Site": {
+      "main": [
+        [
+          {
+            "node": "Update Database",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Database": {
+      "main": [
+        [
+          {
+            "node": "Trigger Deployment Manager",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1.0.0",
+  "id": "site-builder",
+  "tags": ["4site-pro", "build", "site-generation"]
+}

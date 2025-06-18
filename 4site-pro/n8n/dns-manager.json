@@ -1,0 +1,113 @@
+{
+  "name": "dns-manager",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "triggerOn": "specificWorkflow",
+        "workflowId": "deployment-manager"
+      },
+      "id": "workflow-trigger",
+      "name": "Workflow Trigger",
+      "type": "n8n-nodes-base.workflowTrigger",
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare DNS configuration\nconst data = $input.item(0).json;\nconst deploymentConfig = data.deploymentConfig;\nconst deploymentResults = data.deploymentResults;\n\n// Select best performing deployment as primary\nconst primaryDeployment = selectPrimaryDeployment(deploymentResults);\n\nconst dnsConfig = {\n  jobId: data.jobId,\n  subdomain: deploymentConfig.subdomain,\n  domain: '4site.pro',\n  fullDomain: `${deploymentConfig.subdomain}.4site.pro`,\n  primaryTarget: primaryDeployment,\n  deploymentResults,\n  recordsToCreate: generateDnsRecords(deploymentConfig.subdomain, deploymentResults)\n};\n\nfunction selectPrimaryDeployment(results) {\n  // Priority: Vercel > Netlify > GitHub Pages (based on performance)\n  if (results.vercel && results.vercel.status === 'created') {\n    return {\n      provider: 'vercel',\n      url: results.vercel.deployUrl\n    };\n  }\n  if (results.netlify && results.netlify.status === 'created') {\n    return {\n      provider: 'netlify', \n      url: results.netlify.deployUrl\n    };\n  }\n  if (results.github && results.github.status === 'created') {\n    return {\n      provider: 'github',\n      url: results.github.deployUrl\n    };\n  }\n  return null;\n}\n\nfunction generateDnsRecords(subdomain, deployments) {\n  const records = [];\n  \n  // CNAME record for primary deployment\n  if (deployments.vercel) {\n    records.push({\n      type: 'CNAME',\n      name: subdomain,\n      content: 'cname.vercel-dns.com',\n      ttl: 300\n    });\n  } else if (deployments.netlify) {\n    // Extract Netlify domain from URL\n    const netlifyDomain = deployments.netlify.deployUrl.replace('https://', '').replace('http://', '');\n    records.push({\n      type: 'CNAME', \n      name: subdomain,\n      content: netlifyDomain,\n      ttl: 300\n    });\n  } else if (deployments.github) {\n    // GitHub Pages uses their IP addresses\n    records.push({\n      type: 'A',\n      name: subdomain,\n      content: '185.199.108.153',\n      ttl: 300\n    });\n    records.push({\n      type: 'A',\n      name: subdomain,\n      content: '185.199.109.153',\n      ttl: 300\n    });\n  }\n  \n  return records;\n}\n\nreturn {\n  ...data,\n  dnsConfig\n};"
+      },
+      "id": "prepare-dns-config",
+      "name": "Prepare DNS Configuration",
+      "type": "n8n-nodes-base.code",
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://porkbun.com/api/json/v3/dns/retrieve/4site.pro",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  \"secretapikey\": $credentials.porkbunApi.secretKey,\n  \"apikey\": $credentials.porkbunApi.apiKey\n} }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "check-existing-records",
+      "name": "Check Existing DNS Records",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [680, 300],
+      "credentials": {
+        "porkbunApi": {
+          "id": "porkbun-api",
+          "name": "Porkbun DNS API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Check for subdomain conflicts\nconst data = $input.item(0).json;\nconst existingRecords = $input.item(1).json.records || [];\nconst dnsConfig = data.dnsConfig;\n\n// Check if subdomain already exists\nconst subdomainExists = existingRecords.some(record => \n  record.name === dnsConfig.subdomain || \n  record.name === `${dnsConfig.subdomain}.4site.pro`\n);\n\nlet finalSubdomain = dnsConfig.subdomain;\nlet counter = 1;\n\n// Generate unique subdomain if conflict exists\nwhile (subdomainExists) {\n  const testSubdomain = `${dnsConfig.subdomain}-${counter}`;\n  const testExists = existingRecords.some(record => \n    record.name === testSubdomain || \n    record.name === `${testSubdomain}.4site.pro`\n  );\n  \n  if (!testExists) {\n    finalSubdomain = testSubdomain;\n    break;\n  }\n  counter++;\n  \n  // Safety limit\n  if (counter > 100) {\n    finalSubdomain = `${dnsConfig.subdomain}-${Date.now()}`;\n    break;\n  }\n}\n\n// Update DNS config with final subdomain\nconst updatedDnsConfig = {\n  ...dnsConfig,\n  subdomain: finalSubdomain,\n  fullDomain: `${finalSubdomain}.4site.pro`,\n  recordsToCreate: dnsConfig.recordsToCreate.map(record => ({\n    ...record,\n    name: finalSubdomain\n  }))\n};\n\nreturn {\n  ...data,\n  dnsConfig: updatedDnsConfig,\n  subdomainConflict: subdomainExists,\n  originalSubdomain: dnsConfig.subdomain\n};"
+      },
+      "id": "resolve-conflicts",
+      "name": "Resolve Subdomain Conflicts",
+      "type": "n8n-nodes-base.code",
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://porkbun.com/api/json/v3/dns/create/4site.pro",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  \"secretapikey\": $credentials.porkbunApi.secretKey,\n  \"apikey\": $credentials.porkbunApi.apiKey,\n  \"name\": $json.dnsConfig.recordsToCreate[0].name,\n  \"type\": $json.dnsConfig.recordsToCreate[0].type,\n  \"content\": $json.dnsConfig.recordsToCreate[0].content,\n  \"ttl\": $json.dnsConfig.recordsToCreate[0].ttl\n} }}",
+        "options": {
+          "timeout": 15000,
+          "retry": {
+            "enabled": true,
+            "maxTries": 3
+          }
+        }
+      },
+      "id": "create-primary-record",
+      "name": "Create Primary DNS Record",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [1120, 300],
+      "credentials": {
+        "porkbunApi": {
+          "id": "porkbun-api",
+          "name": "Porkbun DNS API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://porkbun.com/api/json/v3/dns/create/4site.pro",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  \"secretapikey\": $credentials.porkbunApi.secretKey,\n  \"apikey\": $credentials.porkbunApi.apiKey,\n  \"name\": $json.dnsConfig.recordsToCreate[1].name,\n  \"type\": $json.dnsConfig.recordsToCreate[1].type,\n  \"content\": $json.dnsConfig.recordsToCreate[1].content,\n  \"ttl\": $json.dnsConfig.recordsToCreate[1].ttl\n} }}",\n        \"options\": {\n          \"timeout\": 15000,\n          \"ignoreHttpStatusErrors\": true\n        }\n      },\n      \"id\": \"create-secondary-record\",\n      \"name\": \"Create Secondary DNS Record\",\n      \"type\": \"n8n-nodes-base.httpRequest\",\n      \"position\": [1120, 400],\n      \"credentials\": {\n        \"porkbunApi\": {\n          \"id\": \"porkbun-api\",\n          \"name\": \"Porkbun DNS API\"\n        }\n      }\n    },\n    {\n      \"parameters\": {\n        \"jsCode\": \"// Validate DNS setup and prepare final response\\nconst items = $input.all();\\nconst originalData = items[0].json;\\nconst primaryDnsResult = items.find(item => item.json.status === 'SUCCESS' && item.json.id);\\nconst secondaryDnsResult = items.find(item => item.json.status === 'SUCCESS' && !items.some(other => other.json.id === item.json.id && other !== item));\\n\\nconst dnsSetup = {\\n  status: primaryDnsResult ? 'success' : 'failed',\\n  domain: originalData.dnsConfig.fullDomain,\\n  primaryRecord: primaryDnsResult ? {\\n    id: primaryDnsResult.json.id,\\n    type: originalData.dnsConfig.recordsToCreate[0].type,\\n    content: originalData.dnsConfig.recordsToCreate[0].content\\n  } : null,\\n  secondaryRecord: secondaryDnsResult ? {\\n    id: secondaryDnsResult.json.id,\\n    type: originalData.dnsConfig.recordsToCreate[1]?.type,\\n    content: originalData.dnsConfig.recordsToCreate[1]?.content\\n  } : null,\\n  propagationEstimate: '5-15 minutes'\\n};\\n\\nconst finalSiteData = {\\n  ...originalData.siteData,\\n  deployedUrl: `https://${originalData.dnsConfig.fullDomain}`,\\n  fallbackUrls: Object.values(originalData.deploymentResults).map(result => result.deployUrl).filter(Boolean)\\n};\\n\\nreturn {\\n  ...originalData,\\n  dnsSetup,\\n  finalSiteData,\\n  completedAt: new Date().toISOString(),\\n  status: 'deployment_complete'\\n};\"\n      },\n      \"id\": \"finalize-deployment\",\n      \"name\": \"Finalize Deployment\",\n      \"type\": \"n8n-nodes-base.code\",\n      \"position\": [1340, 300]\n    },\n    {\n      \"parameters\": {\n        \"operation\": \"update\",\n        \"table\": \"site_generation_jobs\",\n        \"updateKey\": \"job_id\",\n        \"columns\": \"status, dns_setup, final_site_data, completed_at\",\n        \"additionalFields\": {\n          \"mode\": \"independently\"\n        }\n      },\n      \"id\": \"update-database\",\n      \"name\": \"Update Database Final\",\n      \"type\": \"n8n-nodes-base.postgres\",\n      \"position\": [1560, 300],\n      \"credentials\": {\n        \"postgres\": {\n          \"id\": \"postgres-main\",\n          \"name\": \"PostgreSQL Main Database\"\n        }\n      }\n    },\n    {\n      \"parameters\": {\n        \"workflowId\": \"quality-assurance\",\n        \"waitForExecution\": false\n      },\n      \"id\": \"trigger-qa\",\n      \"name\": \"Trigger Quality Assurance\",\n      \"type\": \"n8n-nodes-base.executeWorkflow\",\n      \"position\": [1780, 300]\n    },\n    {\n      \"parameters\": {\n        \"url\": \"={{$json['webhookUrl'] || 'https://api.4site.pro/webhooks/completion'}}\",\n        \"sendHeaders\": true,\n        \"headerParameters\": {\n          \"parameters\": [\n            {\n              \"name\": \"Content-Type\",\n              \"value\": \"application/json\"\n            }\n          ]\n        },\n        \"sendBody\": true,\n        \"specifyBody\": \"json\",\n        \"jsonBody\": \"={{ {\n  jobId: $json.jobId,\n  status: $json.status,\n  siteUrl: $json.finalSiteData.deployedUrl,\n  fallbackUrls: $json.finalSiteData.fallbackUrls,\n  completedAt: $json.completedAt\n} }}\",\n        \"options\": {\n          \"timeout\": 10000\n        }\n      },\n      \"id\": \"notify-completion\",\n      \"name\": \"Notify Completion\",\n      \"type\": \"n8n-nodes-base.httpRequest\",\n      \"position\": [1780, 200]\n    }\n  ],\n  \"pinData\": {},\n  \"connections\": {\n    \"Workflow Trigger\": {\n      \"main\": [\n        [\n          {\n            \"node\": \"Prepare DNS Configuration\",\n            \"type\": \"main\",\n            \"index\": 0\n          }\n        ]\n      ]\n    },\n    \"Prepare DNS Configuration\": {\n      \"main\": [\n        [\n          {\n            \"node\": \"Check Existing DNS Records\",\n            \"type\": \"main\",\n            \"index\": 0\n          }\n        ]\n      ]\n    },\n    \"Check Existing DNS Records\": {\n      \"main\": [\n        [\n          {\n            \"node\": \"Resolve Subdomain Conflicts\",\n            \"type\": \"main\",\n            \"index\": 0\n          }\n        ]\n      ]\n    },\n    \"Resolve Subdomain Conflicts\": {\n      \"main\": [\n        [\n          {\n            \"node\": \"Create Primary DNS Record\",\n            \"type\": \"main\",\n            \"index\": 0\n          },\n          {\n            \"node\": \"Create Secondary DNS Record\",\n            \"type\": \"main\",\n            \"index\": 0\n          }\n        ]\n      ]\n    },\n    \"Create Primary DNS Record\": {\n      \"main\": [\n        [\n          {\n            \"node\": \"Finalize Deployment\",\n            \"type\": \"main\",\n            \"index\": 0\n          }\n        ]\n      ]\n    },\n    \"Create Secondary DNS Record\": {\n      \"main\": [\n        [\n          {\n            \"node\": \"Finalize Deployment\",\n            \"type\": \"main\",\n            \"index\": 0\n          }\n        ]\n      ]\n    },\n    \"Finalize Deployment\": {\n      \"main\": [\n        [\n          {\n            \"node\": \"Update Database Final\",\n            \"type\": \"main\",\n            \"index\": 0\n          },\n          {\n            \"node\": \"Notify Completion\",\n            \"type\": \"main\",\n            \"index\": 0\n          }\n        ]\n      ]\n    },\n    \"Update Database Final\": {\n      \"main\": [\n        [\n          {\n            \"node\": \"Trigger Quality Assurance\",\n            \"type\": \"main\",\n            \"index\": 0\n          }\n        ]\n      ]\n    }\n  },\n  \"active\": true,\n  \"settings\": {\n    \"executionOrder\": \"v1\"\n  },\n  \"versionId\": \"1.0.0\",\n  \"id\": \"dns-manager\",\n  \"tags\": [\"4site-pro\", \"dns\", \"porkbun\", \"subdomain\"]\n}"

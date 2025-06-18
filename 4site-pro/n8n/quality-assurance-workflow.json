@@ -1,0 +1,291 @@
+{
+  "name": "quality-assurance",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "triggerOn": "specificWorkflow",
+        "workflowId": "dns-manager"
+      },
+      "id": "workflow-trigger",
+      "name": "Workflow Trigger",
+      "type": "n8n-nodes-base.workflowTrigger",
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare QA test configuration\nconst data = $input.item(0).json;\nconst finalSiteData = data.finalSiteData;\nconst dnsSetup = data.dnsSetup;\n\nconst qaConfig = {\n  jobId: data.jobId,\n  primaryUrl: finalSiteData.deployedUrl,\n  fallbackUrls: finalSiteData.fallbackUrls || [],\n  testSuite: {\n    functional: true,\n    performance: true,\n    accessibility: true,\n    crossBrowser: data.planLevel !== 'free',\n    seo: true\n  },\n  thresholds: {\n    loadTime: data.planLevel === 'enterprise' ? 2000 : 3000, // ms\n    performanceScore: data.planLevel === 'enterprise' ? 90 : 80,\n    accessibilityScore: 85,\n    seoScore: 80\n  },\n  browsers: data.planLevel === 'enterprise' ? \n    ['chrome', 'firefox', 'safari', 'edge'] : \n    ['chrome', 'firefox'],\n  testStarted: new Date().toISOString()\n};\n\nreturn {\n  ...data,\n  qaConfig\n};"
+      },
+      "id": "prepare-qa-config",
+      "name": "Prepare QA Configuration",
+      "type": "n8n-nodes-base.code",
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "command": "docker run --rm -v /tmp/qa-results:/results --name qa-{{$json['jobId']}} puppeteer/puppeteer:latest node -e '\nconst puppeteer = require(\"puppeteer\");\nconst fs = require(\"fs\");\n\n(async () => {\n  const browser = await puppeteer.launch({args: [\"--no-sandbox\", \"--disable-setuid-sandbox\"]});\n  const page = await browser.newPage();\n  \n  const testUrl = \"{{$json[\"qaConfig\"][\"primaryUrl\"]}}\";\n  const jobId = \"{{$json[\"jobId\"]}}\";\n  \n  console.log(`Testing ${testUrl}`);\n  \n  const startTime = Date.now();\n  \n  try {\n    // Set viewport for testing\n    await page.setViewport({ width: 1920, height: 1080 });\n    \n    // Navigate to the site\n    const response = await page.goto(testUrl, { \n      waitUntil: \"networkidle2\", \n      timeout: 30000 \n    });\n    \n    const loadTime = Date.now() - startTime;\n    \n    // Basic functionality tests\n    const tests = {\n      pageLoads: response && response.status() === 200,\n      titleExists: await page.title() !== \"\",\n      hasContent: (await page.content()).length > 1000,\n      loadTime: loadTime,\n      responseStatus: response ? response.status() : 0\n    };\n    \n    // Check for specific elements\n    tests.hasHeroSection = await page.$(\".hero-section\") !== null;\n    tests.hasFeaturesSection = await page.$(\".features-section\") !== null;\n    tests.hasFooter = await page.$(\"footer\") !== null;\n    tests.hasGithubLink = await page.$(\"a[href*=\\\"github.com\\\"]\") !== null;\n    \n    // Take screenshot\n    await page.screenshot({ \n      path: `/results/screenshot-${jobId}.png`, \n      fullPage: true \n    });\n    \n    // Performance metrics\n    const performanceMetrics = await page.evaluate(() => {\n      const navigation = performance.getEntriesByType(\"navigation\")[0];\n      return {\n        domContentLoaded: navigation.domContentLoadedEventEnd - navigation.fetchStart,\n        loadComplete: navigation.loadEventEnd - navigation.fetchStart,\n        firstPaint: performance.getEntriesByType(\"paint\").find(p => p.name === \"first-paint\")?.startTime || 0,\n        firstContentfulPaint: performance.getEntriesByType(\"paint\").find(p => p.name === \"first-contentful-paint\")?.startTime || 0\n      };\n    });\n    \n    const results = {\n      jobId,\n      testUrl,\n      timestamp: new Date().toISOString(),\n      status: \"success\",\n      tests,\n      performance: performanceMetrics,\n      loadTime,\n      screenshot: `/results/screenshot-${jobId}.png`\n    };\n    \n    fs.writeFileSync(`/results/qa-results-${jobId}.json`, JSON.stringify(results, null, 2));\n    console.log(JSON.stringify(results));\n    \n  } catch (error) {\n    const errorResults = {\n      jobId,\n      testUrl,\n      timestamp: new Date().toISOString(),\n      status: \"error\",\n      error: error.message,\n      loadTime: Date.now() - startTime\n    };\n    \n    fs.writeFileSync(`/results/qa-results-${jobId}.json`, JSON.stringify(errorResults, null, 2));\n    console.log(JSON.stringify(errorResults));\n  } finally {\n    await browser.close();\n  }\n})();\n'",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "functional-testing",
+      "name": "Functional Testing",
+      "type": "n8n-nodes-base.executeCommand",
+      "position": [680, 200]
+    },
+    {
+      "parameters": {
+        "command": "docker run --rm -v /tmp/qa-results:/results --name perf-{{$json['jobId']}} sitespeedio/sitespeed.io:latest --url {{$json['qaConfig']['primaryUrl']}} --outputFolder /results/performance-{{$json['jobId']}} --budget.configPath /dev/null --budget.output json --plugins.remove screenshot --plugins.remove html --firstParty .*4site\\.pro.* --json",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "performance-testing",
+      "name": "Performance Testing",
+      "type": "n8n-nodes-base.executeCommand",
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "command": "docker run --rm -v /tmp/qa-results:/results --name a11y-{{$json['jobId']}} node:18-alpine sh -c '\nnpm install -g @axe-core/cli\naxe {{$json[\"qaConfig\"][\"primaryUrl\"]}} --format json --output /results/accessibility-{{$json[\"jobId\"]}}.json\ncat /results/accessibility-{{$json[\"jobId\"]}}.json\n'",
+        "options": {
+          "timeout": 45000
+        }
+      },
+      "id": "accessibility-testing",
+      "name": "Accessibility Testing",
+      "type": "n8n-nodes-base.executeCommand",
+      "position": [680, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process QA test results\nconst items = $input.all();\nconst originalData = items[0].json;\nconst qaConfig = originalData.qaConfig;\n\n// Parse test results\nconst functionalResult = items.find(item => typeof item.json === 'string' && item.json.includes('\"status\"'));\nconst performanceResult = items.find(item => typeof item.json === 'string' && item.json.includes('\"lighthouse\"'));\nconst accessibilityResult = items.find(item => typeof item.json === 'string' && item.json.includes('\"violations\"'));\n\nlet functionalTests = null;\nif (functionalResult) {\n  try {\n    functionalTests = JSON.parse(functionalResult.json);\n  } catch (error) {\n    console.log('Failed to parse functional test results:', error.message);\n  }\n}\n\nlet performanceTests = null;\nif (performanceResult) {\n  try {\n    const perfData = JSON.parse(performanceResult.json);\n    performanceTests = {\n      lighthouse: perfData.lighthouse || {},\n      webPageTest: perfData.webPageTest || {},\n      scores: {\n        performance: perfData.lighthouse?.performance || 0,\n        accessibility: perfData.lighthouse?.accessibility || 0,\n        bestPractices: perfData.lighthouse?.bestPractices || 0,\n        seo: perfData.lighthouse?.seo || 0\n      }\n    };\n  } catch (error) {\n    console.log('Failed to parse performance test results:', error.message);\n  }\n}\n\nlet accessibilityTests = null;\nif (accessibilityResult) {\n  try {\n    const a11yData = JSON.parse(accessibilityResult.json);\n    accessibilityTests = {\n      violations: a11yData.violations || [],\n      passes: a11yData.passes || [],\n      score: calculateA11yScore(a11yData)\n    };\n  } catch (error) {\n    console.log('Failed to parse accessibility test results:', error.message);\n  }\n}\n\nfunction calculateA11yScore(a11yData) {\n  const violations = a11yData.violations || [];\n  const totalChecks = (a11yData.passes || []).length + violations.length;\n  const passedChecks = (a11yData.passes || []).length;\n  return totalChecks > 0 ? Math.round((passedChecks / totalChecks) * 100) : 0;\n}\n\n// Determine overall quality score\nconst qualityMetrics = {\n  functional: functionalTests ? {\n    passed: functionalTests.status === 'success' && functionalTests.tests?.pageLoads,\n    score: functionalTests.status === 'success' ? 100 : 0,\n    details: functionalTests.tests || {}\n  } : { passed: false, score: 0 },\n  \n  performance: performanceTests ? {\n    passed: performanceTests.scores.performance >= qaConfig.thresholds.performanceScore,\n    score: performanceTests.scores.performance,\n    loadTime: functionalTests?.loadTime || 0,\n    details: performanceTests.scores\n  } : { passed: false, score: 0 },\n  \n  accessibility: accessibilityTests ? {\n    passed: accessibilityTests.score >= qaConfig.thresholds.accessibilityScore,\n    score: accessibilityTests.score,\n    violations: accessibilityTests.violations.length,\n    details: accessibilityTests\n  } : { passed: false, score: 0 }\n};\n\n// Calculate overall quality score\nconst overallScore = Math.round((\n  qualityMetrics.functional.score * 0.4 +\n  qualityMetrics.performance.score * 0.4 +\n  qualityMetrics.accessibility.score * 0.2\n));\n\nconst qaResults = {\n  jobId: originalData.jobId,\n  testUrl: qaConfig.primaryUrl,\n  overallScore,\n  passed: overallScore >= 80,\n  qualityMetrics,\n  thresholds: qaConfig.thresholds,\n  completedAt: new Date().toISOString(),\n  testDuration: Date.now() - new Date(qaConfig.testStarted).getTime()\n};\n\nreturn {\n  ...originalData,\n  qaResults,\n  status: qaResults.passed ? 'qa_passed' : 'qa_failed'\n};"
+      },
+      "id": "process-qa-results",
+      "name": "Process QA Results",
+      "type": "n8n-nodes-base.code",
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "table": "site_generation_jobs",
+        "updateKey": "job_id",
+        "columns": "status, qa_results, updated_at",
+        "additionalFields": {
+          "mode": "independently"
+        }
+      },
+      "id": "update-database",
+      "name": "Update Database with QA Results",
+      "type": "n8n-nodes-base.postgres",
+      "position": [1120, 300],
+      "credentials": {
+        "postgres": {
+          "id": "postgres-main",
+          "name": "PostgreSQL Main Database"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{$json['qaResults']['overallScore']}}",
+              "operation": "smallerEqual",
+              "value2": 60
+            }
+          ]
+        }
+      },
+      "id": "check-qa-failure",
+      "name": "Check QA Failure",
+      "type": "n8n-nodes-base.if",
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "workflowId": "error-handler",
+        "waitForExecution": false
+      },
+      "id": "trigger-error-handler",
+      "name": "Trigger Error Handler",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "position": [1560, 200]
+    },
+    {
+      "parameters": {
+        "workflowId": "analytics-processor",
+        "waitForExecution": false
+      },
+      "id": "trigger-analytics",
+      "name": "Trigger Analytics Processor",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "position": [1560, 400]
+    },
+    {
+      "parameters": {
+        "url": "={{$json['webhookUrl'] || 'https://api.4site.pro/webhooks/qa-complete'}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  jobId: $json.jobId,\n  status: $json.status,\n  qaResults: $json.qaResults,\n  siteUrl: $json.finalSiteData.deployedUrl,\n  completedAt: $json.qaResults.completedAt\n} }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "notify-qa-completion",
+      "name": "Notify QA Completion",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [1780, 300]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Prepare QA Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare QA Configuration": {
+      "main": [
+        [
+          {
+            "node": "Functional Testing",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Performance Testing",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Accessibility Testing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Functional Testing": {
+      "main": [
+        [
+          {
+            "node": "Process QA Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Performance Testing": {
+      "main": [
+        [
+          {
+            "node": "Process QA Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Accessibility Testing": {
+      "main": [
+        [
+          {
+            "node": "Process QA Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process QA Results": {
+      "main": [
+        [
+          {
+            "node": "Update Database with QA Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Database with QA Results": {
+      "main": [
+        [
+          {
+            "node": "Check QA Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check QA Failure": {
+      "main": [
+        [
+          {
+            "node": "Trigger Error Handler",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Trigger Analytics Processor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger Error Handler": {
+      "main": [
+        [
+          {
+            "node": "Notify QA Completion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger Analytics Processor": {
+      "main": [
+        [
+          {
+            "node": "Notify QA Completion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1.0.0",
+  "id": "quality-assurance",
+  "tags": ["4site-pro", "qa", "testing", "performance", "accessibility"]
+}

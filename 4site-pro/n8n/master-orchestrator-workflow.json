@@ -1,0 +1,261 @@
+{
+  "name": "4site-pro-master-orchestrator",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "generate-site",
+        "responseMode": "onReceived",
+        "responseData": "firstEntryJson",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "id": "webhook-trigger",
+      "name": "Site Generation Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "position": [240, 300],
+      "webhookId": "4site-pro-generate"
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "jobId",
+              "value": "={{$randomString(16)}}"
+            },
+            {
+              "name": "status",
+              "value": "received"
+            },
+            {
+              "name": "timestamp",
+              "value": "={{$now}}"
+            },
+            {
+              "name": "githubUrl",
+              "value": "={{$json['githubUrl']}}"
+            },
+            {
+              "name": "userEmail",
+              "value": "={{$json['userEmail'] || 'anonymous@4site.pro'}}"
+            },
+            {
+              "name": "planLevel",
+              "value": "={{$json['planLevel'] || 'free'}}"
+            }
+          ]
+        }
+      },
+      "id": "job-init",
+      "name": "Initialize Job",
+      "type": "n8n-nodes-base.set",
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "site_generation_jobs",
+        "columns": "job_id, github_url, user_email, plan_level, status, created_at",
+        "additionalFields": {
+          "mode": "independently"
+        }
+      },
+      "id": "database-log",
+      "name": "Log Job to Database",
+      "type": "n8n-nodes-base.postgres",
+      "position": [680, 300],
+      "credentials": {
+        "postgres": {
+          "id": "postgres-main",
+          "name": "PostgreSQL Main Database"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json['githubUrl']}}",
+              "operation": "contains",
+              "value2": "github.com"
+            }
+          ]
+        }
+      },
+      "id": "validate-github-url",
+      "name": "Validate GitHub URL",
+      "type": "n8n-nodes-base.if",
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "workflowId": "github-repository-processor",
+        "waitForExecution": false
+      },
+      "id": "trigger-github-processor",
+      "name": "Trigger GitHub Processor",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "position": [1120, 240]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "status",
+              "value": "error"
+            },
+            {
+              "name": "error",
+              "value": "Invalid GitHub URL provided"
+            }
+          ]
+        }
+      },
+      "id": "error-invalid-url",
+      "name": "Invalid URL Error",
+      "type": "n8n-nodes-base.set",
+      "position": [1120, 360]
+    },
+    {
+      "parameters": {
+        "url": "={{$json['webhookUrl'] || 'https://api.4site.pro/webhooks/status'}}",
+        "options": {
+          "timeout": 5000
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { jobId: $json['jobId'], status: $json['status'], error: $json['error'] } }}"
+      },
+      "id": "notify-frontend",
+      "name": "Notify Frontend",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "queueName": "site-generation-queue",
+        "operation": "add",
+        "jobData": "={{ { jobId: $json['jobId'], githubUrl: $json['githubUrl'], userEmail: $json['userEmail'], planLevel: $json['planLevel'] } }}",
+        "options": {
+          "priority": "={{$json['planLevel'] === 'enterprise' ? 1 : ($json['planLevel'] === 'pro' ? 5 : 10)}}"
+        }
+      },
+      "id": "queue-job",
+      "name": "Add to Processing Queue",
+      "type": "n8n-nodes-base.redis",
+      "position": [1120, 120],
+      "credentials": {
+        "redis": {
+          "id": "redis-main",
+          "name": "Redis Main Cache"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Site Generation Webhook": {
+      "main": [
+        [
+          {
+            "node": "Initialize Job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Initialize Job": {
+      "main": [
+        [
+          {
+            "node": "Log Job to Database",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Job to Database": {
+      "main": [
+        [
+          {
+            "node": "Validate GitHub URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate GitHub URL": {
+      "main": [
+        [
+          {
+            "node": "Add to Processing Queue",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Trigger GitHub Processor",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Invalid URL Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger GitHub Processor": {
+      "main": [
+        [
+          {
+            "node": "Notify Frontend",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Invalid URL Error": {
+      "main": [
+        [
+          {
+            "node": "Notify Frontend",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add to Processing Queue": {
+      "main": [
+        [
+          {
+            "node": "Trigger GitHub Processor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1.0.0",
+  "id": "master-orchestrator",
+  "tags": ["4site-pro", "orchestrator", "main-pipeline"]
+}
