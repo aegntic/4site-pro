@@ -8,6 +8,11 @@ const GEMINI_MODEL_NAME = 'gemini-1.5-flash';
 const GEMINI_API_TIMEOUT_MS = 30000;
 
 async function generateEnhancedSiteContent(repoUrl: string): Promise<EnhancedSiteContent> {
+  // Validate API key before proceeding
+  if (!GEMINI_API_KEY || GEMINI_API_KEY === 'PLACEHOLDER_API_KEY') {
+    throw new Error('Gemini API key not configured. Please set VITE_GEMINI_API_KEY environment variable.');
+  }
+
   const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
   const model = genAI.getGenerativeModel({ model: GEMINI_MODEL_NAME });
   
