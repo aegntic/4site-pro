@@ -196,6 +196,26 @@ const App: React.FC = () => {
 
         {appState === AppState.Success && siteData && (
           <div className="relative">
+            {/* Demo Mode Banner */}
+            {siteData.aiModel === 'demo-mode' && (
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50"
+              >
+                <div className="backdrop-blur-xl bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-400/30 rounded-xl px-6 py-3 text-center">
+                  <div className="flex items-center gap-2 text-yellow-300">
+                    <span className="text-lg">🎭</span>
+                    <span className="font-semibold">Demo Mode Active</span>
+                    <span className="text-lg">🎭</span>
+                  </div>
+                  <p className="text-xs text-yellow-200/80 mt-1">
+                    This is a preview of what your generated site would look like. Get your free Gemini API key to unlock full AI generation!
+                  </p>
+                </div>
+              </motion.div>
+            )}
+            
             {/* Site Preview */}
             <SimplePreviewTemplate siteData={siteData} />
             
