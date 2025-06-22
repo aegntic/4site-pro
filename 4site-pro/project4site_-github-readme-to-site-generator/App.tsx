@@ -19,13 +19,8 @@ const App: React.FC = () => {
     e.preventDefault();
     if (!repoUrl.trim()) return;
 
-    // Check for API key
-    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-    if (!apiKey || apiKey === 'PLACEHOLDER_API_KEY') {
-      setError('Gemini API key not configured. Please set VITE_GEMINI_API_KEY in your .env.local file.');
-      setAppState(AppState.Error);
-      return;
-    }
+    // OpenRouter API key is handled automatically in the service
+    // No need for manual API key validation here
 
     setLoading(true);
     setError(null);
@@ -210,7 +205,7 @@ const App: React.FC = () => {
                     <span className="text-lg">🎭</span>
                   </div>
                   <p className="text-xs text-yellow-200/80 mt-1">
-                    This is a preview of what your generated site would look like. Get your free Gemini API key to unlock full AI generation!
+                    This is a preview of what your generated site would look like. Get your OpenRouter API key to unlock full AI generation!
                   </p>
                 </div>
               </motion.div>

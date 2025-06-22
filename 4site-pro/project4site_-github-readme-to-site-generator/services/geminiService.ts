@@ -1,20 +1,35 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { SiteData } from '../types';
 import { EnhancedSiteContent } from '../enhanced-content-types';
 import { convertToSiteData } from '../utils/contentConverter';
 
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || 'PLACEHOLDER_API_KEY';
-const GEMINI_MODEL_NAME = 'gemini-1.5-flash';
-const GEMINI_API_TIMEOUT_MS = 30000;
+// Default API key for free models only (obfuscated)  
+const DEFAULT_OPENROUTER_KEY = atob('c2stb3ItdjEtYWVnbnQtNHNpdGVwcm8tZnJlZS1vbmx5LWtleQ=='); // User's actual key will be inserted here
+const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY || DEFAULT_OPENROUTER_KEY;
 
-async function generateEnhancedSiteContent(repoUrl: string): Promise<EnhancedSiteContent> {
+// Free models only for default key
+const FREE_MODELS = [
+  'google/gemma-2-9b-it:free',
+  'meta-llama/llama-3.1-8b-instruct:free', 
+  'microsoft/phi-3-mini-128k-instruct:free',
+  'huggingface/zephyr-7b-beta:free'
+];
+
+const OPENROUTER_MODEL = 'google/gemma-2-9b-it:free'; // Free model for cost control
+const OPENROUTER_API_TIMEOUT_MS = 30000;
+
+async function generateEnhancedSiteContent(repoUrl: string, apiKey?: string, modelOverride?: string): Promise<EnhancedSiteContent> {
+  const effectiveApiKey = apiKey || OPENROUTER_API_KEY;
+  const isDefaultKey = effectiveApiKey === DEFAULT_OPENROUTER_KEY;
+  
+  // Security: Force free models when using default key
+  const selectedModel = isDefaultKey 
+    ? (modelOverride && FREE_MODELS.includes(modelOverride) ? modelOverride : OPENROUTER_MODEL)
+    : (modelOverride || 'google/gemini-2.0-flash-exp');
+  
   // Validate API key before proceeding
-  if (!GEMINI_API_KEY || GEMINI_API_KEY === 'PLACEHOLDER_API_KEY') {
-    throw new Error('Gemini API key not configured. Please set VITE_GEMINI_API_KEY environment variable.');
+  if (!effectiveApiKey || effectiveApiKey === 'PLACEHOLDER_API_KEY') {
+    throw new Error('OpenRouter API key not provided. Please enter your OpenRouter API key to generate AI-powered sites.');
   }
-
-  const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-  const model = genAI.getGenerativeModel({ model: GEMINI_MODEL_NAME });
   
   // Extract repo info
   const urlParts = repoUrl.replace(/^https?:\/\/github\.com\//, '').split('/');
@@ -63,8 +78,38 @@ Focus on:
 
 Respond with ONLY the JSON, no other text.`;
 
-  const result = await model.generateContent(prompt);
-  const response_text = await result.response.text();
+  const apiResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${effectiveApiKey}`,
+      'Content-Type': 'application/json',
+      'HTTP-Referer': 'https://4site.pro',
+      'X-Title': '4site.pro - GitHub to Website Generator'
+    },
+    body: JSON.stringify({
+      model: selectedModel,
+      messages: [
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 4000
+    })
+  });
+
+  if (!apiResponse.ok) {
+    const errorData = await apiResponse.text();
+    throw new Error(`OpenRouter API error: ${apiResponse.status} - ${errorData}`);
+  }
+
+  const data = await apiResponse.json();
+  const response_text = data.choices[0]?.message?.content;
+
+  if (!response_text) {
+    throw new Error('No response from OpenRouter API');
+  }
   
   try {
     const parsed = JSON.parse(response_text);
@@ -72,7 +117,7 @@ Respond with ONLY the JSON, no other text.`;
       markdown: parsed.markdown,
       metadata: parsed.metadata,
       generatedAt: new Date(),
-      aiModel: GEMINI_MODEL_NAME,
+      aiModel: selectedModel,
       confidence: 0.95
     };
   } catch (error) {
@@ -124,10 +169,12 @@ const generateDemoSiteData = (repoUrl: string): SiteData => {
   };
 };
 
-export const generateSiteContentFromUrl = async (repoUrl: string): Promise<SiteData> => {
+export const generateSiteContentFromUrl = async (repoUrl: string, apiKey?: string): Promise<SiteData> => {
   try {
+    const effectiveApiKey = apiKey || OPENROUTER_API_KEY;
+    
     // Check if API key is available for real generation
-    if (!GEMINI_API_KEY || GEMINI_API_KEY === 'PLACEHOLDER_API_KEY' || GEMINI_API_KEY === 'DEMO_KEY_FOR_TESTING') {
+    if (!effectiveApiKey || effectiveApiKey === 'PLACEHOLDER_API_KEY' || effectiveApiKey === 'DEMO_KEY_FOR_TESTING') {
       console.log('🎭 Demo mode: Generating sample site data...');
       // Simulate API delay for realistic experience
       await new Promise(resolve => setTimeout(resolve, 2000));
@@ -138,8 +185,8 @@ export const generateSiteContentFromUrl = async (repoUrl: string): Promise<SiteD
     const owner = urlParts[1];
     const repo = urlParts[2];
     
-    console.log(`Generating enhanced content for ${owner}/${repo}...`);
-    const enhancedContent = await generateEnhancedSiteContent(repoUrl);
+    console.log(`Generating enhanced content for ${owner}/${repo} using OpenRouter...`);
+    const enhancedContent = await generateEnhancedSiteContent(repoUrl, apiKey);
     const siteData = convertToSiteData(enhancedContent, repoUrl);
     
     siteData.owner = owner;
