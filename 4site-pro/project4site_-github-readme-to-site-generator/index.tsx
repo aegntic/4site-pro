@@ -2,6 +2,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import { AuthProvider } from './contexts/AuthContext';
 // import App from './App-test';
 // import App from './App-minimal';
 
@@ -21,10 +22,10 @@ try {
   
   root.render(
     <React.StrictMode>
-      <>
+      <AuthProvider>
         <div className="gradient-mesh" />
         <App />
-      </>
+      </AuthProvider>
     </React.StrictMode>
   );
   

@@ -24,6 +24,7 @@ export interface SiteData {
   repoUrl: string;          // GitHub repository URL
   githubUrl: string;        // Alias for repoUrl for compatibility
   generatedMarkdown: string; // The raw Markdown returned by Gemini
+  generatedBy?: string;     // AI model or mode used for generation (e.g., 'demo-mode', 'gemini')
   sections: Section[];      // Structured content sections
   features: string[];       // Array of key features for preview
   techStack: string[];      // Array of technologies used

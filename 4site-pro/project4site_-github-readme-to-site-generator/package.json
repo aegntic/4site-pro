@@ -11,6 +11,7 @@
     "dev:port": "vite --port",
     "build": "vite build",
     "preview": "vite preview",
+    "type-check": "tsc --noEmit",
     "start": "node ../start-services.js",
     "start:kill": "node ../start-services.js --kill",
     "ports:check": "lsof -i :5173,3000,3001,3002,3003,3004,3005,4000 | grep LISTEN || echo 'No services running on project ports'",

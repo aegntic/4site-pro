@@ -4,21 +4,34 @@ import { Database } from './database.types';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables');
+// For demo mode, provide mock values
+const isDemo = !supabaseUrl || !supabaseAnonKey || supabaseUrl.includes('demo-project');
+
+if (isDemo) {
+  console.warn('Running in demo mode - Supabase features will be limited');
 }
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true,
-    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-  },
-});
+// Create supabase client (with demo fallback)
+export const supabase = isDemo 
+  ? null  // In demo mode, return null client
+  : createClient<Database>(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true,
+        storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+      },
+    });
+
+// Demo mode helper
+const throwDemoError = () => {
+  throw new Error('Authentication not available in demo mode. Please set up Supabase environment variables.');
+};
 
 // Auth helpers
 export const signUp = async (email: string, password: string, referralCode?: string) => {
+  if (isDemo || !supabase) throwDemoError();
+  
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -43,6 +56,8 @@ export const signUp = async (email: string, password: string, referralCode?: str
 };
 
 export const signIn = async (email: string, password: string) => {
+  if (isDemo || !supabase) throwDemoError();
+  
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
@@ -70,12 +85,16 @@ export const signOut = async () => {
 };
 
 export const getCurrentUser = async () => {
+  if (isDemo || !supabase) return null;
+  
   const { data: { user }, error } = await supabase.auth.getUser();
   if (error) throw error;
   return user;
 };
 
 export const getSession = async () => {
+  if (isDemo || !supabase) return null;
+  
   const { data: { session }, error } = await supabase.auth.getSession();
   if (error) throw error;
   return session;

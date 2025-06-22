@@ -26,5 +26,46 @@
     "paths": {
       "@/*" :  ["./*"]
     }
-  }
+  },
+  "include": [
+    "App.tsx",
+    "main.tsx",
+    "index.tsx",
+    "types.ts",
+    "components/templates/**/*",
+    "components/conversion/**/*",
+    "components/auth/LoginModal.tsx",
+    "hooks/useGenerationTracking.ts",
+    "hooks/useAuth.ts",
+    "contexts/AuthContext.tsx",
+    "services/geminiService.ts",
+    "services/supabaseClient.ts",
+    "utils/healthCheck.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/**/*",
+    "components/dashboard/**/*",
+    "components/generator/**/*",
+    "components/landing/**/*",
+    "components/ui/**/*",
+    "services/deepAnalysisOrchestrator.ts",
+    "services/multiPageGenerator.ts",
+    "services/progressTracker.ts",
+    "services/repositoryAnalyzer.ts",
+    "services/subscriptionService.ts",
+    "monitoring/**/*",
+    "server/**/*",
+    "test-suite/**/*",
+    "validate-fix-script.ts",
+    "vite-production-config.ts",
+    "test-simple-app.tsx",
+    "App-Premium.tsx",
+    "site-generation-integration-tests.ts",
+    "utils/contentConverter.ts",
+    "utils/portManager.ts",
+    "utils/seoHelpers.ts",
+    "**/*.js"
+  ]
 }

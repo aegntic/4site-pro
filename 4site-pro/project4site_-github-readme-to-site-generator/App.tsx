@@ -1,26 +1,133 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { generateSiteContentFromUrl } from './services/geminiService';
-import { generateDemoSite } from './services/demoService';
 import { SiteData, AppState } from './types';
-import { SimplePreviewTemplate } from './components/templates/SimplePreviewTemplate';
+import { useAuth } from './contexts/AuthContext';
+import { useGenerationTracking } from './hooks/useGenerationTracking';
+import { performSystemHealthCheck } from './utils/healthCheck';
+import { useRetry } from './hooks/useRetry';
+import { useComponentPerformance, useMemoizedValue, useDebouncedState } from './hooks/usePerformance';
+import { useServiceWorker, cacheUtils } from './utils/serviceWorker';
+import { 
+  LazyWrapper, 
+  SimplePreviewTemplate,
+  LoginModal,
+  ConversionPrompt,
+  ErrorBoundary,
+  FloatingFeedbackButton,
+  AIGenerationLoader,
+  preloadComponents
+} from './components/LazyComponents';
+import { PerformanceMonitor, usePerformanceMonitor } from './components/monitoring/PerformanceMonitor';
 import './index.css';
 import './styles/glassmorphism.css';
 
 const App: React.FC = () => {
+  // Performance monitoring
+  const metrics = useComponentPerformance('App');
+  const { isVisible: perfMonitorVisible, toggle: togglePerfMonitor } = usePerformanceMonitor();
+  
+  // Service worker integration
+  const { status: swStatus, prefetchUrls } = useServiceWorker();
+  
+  // Auth and tracking
+  const { user, profile, loading: authLoading, signOut } = useAuth();
+  const {
+    anonymousGenerations,
+    showSignupPrompt,
+    setShowSignupPrompt,
+    trackGeneration
+  } = useGenerationTracking();
+  
+  // Core state
   const [appState, setAppState] = useState<AppState>(AppState.Idle);
   const [siteData, setSiteData] = useState<SiteData | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [repoUrl, setRepoUrl] = useState<string>('');
-  const [loading, setLoading] = useState(false);
   const [showDeployPopup, setShowDeployPopup] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [generationStartTime, setGenerationStartTime] = useState<number | null>(null);
+  
+  // Optimized state with debouncing
+  const [debouncedRepoUrl, setRepoUrl, repoUrl] = useDebouncedState<string>('', 150);
+  const [debouncedPreviewUrl, setPreviewUrl, previewUrl] = useDebouncedState<string>('', 100);
+  const [loading, setLoading] = useState(false);
+  
+  // Memoized values
+  const showPreview = useMemoizedValue(() => {
+    return debouncedPreviewUrl.length > 0;
+  }, [debouncedPreviewUrl], 'showPreview');
+
+  // Enhanced site generation with retry logic
+  const { execute: executeGeneration, isRetrying, currentAttempt } = useRetry(
+    generateSiteContentFromUrl,
+    {
+      maxAttempts: 3,
+      delay: 2000,
+      backoff: 'exponential',
+      shouldRetry: (error, attempt) => {
+        // Retry on network errors and timeouts
+        const retryableErrors = ['NetworkError', 'TypeError', 'TimeoutError'];
+        const message = error.message.toLowerCase();
+        return (
+          attempt < 3 && 
+          (retryableErrors.includes(error.name) || 
+           message.includes('network') || 
+           message.includes('timeout') ||
+           message.includes('fetch'))
+        );
+      },
+      onRetry: (error, attempt) => {
+        console.log(`Retrying site generation (attempt ${attempt}):`, error.message);
+      }
+    }
+  );
+
+  // Performance optimizations
+  useEffect(() => {
+    // Preload components when user starts interacting
+    if (repoUrl.length > 3) {
+      preloadComponents.preloadTemplates();
+    }
+    
+    // Preload auth components for unauthenticated users
+    if (!user && repoUrl.length > 0) {
+      preloadComponents.preloadAuth();
+    }
+    
+    // Prefetch critical resources
+    if (swStatus.activated) {
+      prefetchUrls([
+        '/4sitepro-logo.png',
+        '/ae4sitepro-assets/branding/'
+      ]);
+    }
+  }, [repoUrl, user, swStatus.activated, prefetchUrls]);
+
+  // Memoized URL processing function
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setRepoUrl(value);
+    
+    // Process URL patterns with memoized logic
+    let expandedUrl = '';
+    
+    if (value.match(/^[a-zA-Z0-9._-]+\/[a-zA-Z0-9._-]+$/)) {
+      expandedUrl = `https://github.com/${value}`;
+    } else if (value.match(/^github\.com\/[a-zA-Z0-9._-]+\/[a-zA-Z0-9._-]+$/)) {
+      expandedUrl = `https://${value}`;
+    } else if (value.startsWith('github.com/')) {
+      expandedUrl = `https://${value}`;
+    }
+    
+    setPreviewUrl(expandedUrl);
+  }, [setRepoUrl, setPreviewUrl]);
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!repoUrl.trim()) return;
+    if (!debouncedRepoUrl.trim()) return;
 
     // Smart URL processing - automatically format GitHub repository shortcuts
-    let processedUrl = repoUrl.trim();
+    let processedUrl = debouncedRepoUrl.trim();
     
     // Convert "owner/repo" format to full GitHub URL
     if (processedUrl.match(/^[a-zA-Z0-9._-]+\/[a-zA-Z0-9._-]+$/)) {
@@ -44,9 +151,10 @@ const App: React.FC = () => {
     setLoading(true);
     setError(null);
     setAppState(AppState.Loading);
+    setGenerationStartTime(Date.now());
 
     try {
-      const data = await generateSiteContentFromUrl(processedUrl);
+      const data = await executeGeneration(processedUrl);
       
       // Ensure we have a valid SiteData object, not a string
       if (!data || typeof data === 'string') {
@@ -55,24 +163,62 @@ const App: React.FC = () => {
       
       setSiteData(data);
       setAppState(AppState.Success);
+      
+      // Track generation for anonymous users (conversion trigger)
+      trackGeneration();
     } catch (err) {
       console.error('Generation error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to generate site');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to generate site';
+      
+      // Enhanced error message with retry information
+      if (isRetrying) {
+        setError(`${errorMessage} (Retrying... attempt ${currentAttempt}/3)`);
+      } else {
+        setError(errorMessage);
+      }
+      
       setAppState(AppState.Error);
     } finally {
       setLoading(false);
+      setGenerationStartTime(null);
     }
-  }, [repoUrl]);
+  }, [debouncedRepoUrl, executeGeneration, isRetrying, currentAttempt, trackGeneration]);
 
   const handleReset = useCallback(() => {
     setAppState(AppState.Idle);
     setSiteData(null);
     setError(null);
     setRepoUrl('');
+    setPreviewUrl('');
+    setShowPreview(false);
+  }, []);
+
+  // Handle conversion prompt actions
+  const handleSignUpFromPrompt = useCallback(() => {
+    setShowSignupPrompt(false);
+    setShowLoginModal(true);
+  }, [setShowSignupPrompt]);
+
+  // Health check endpoint - accessible via ?health=true
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('health') === 'true') {
+      performSystemHealthCheck().then(health => {
+        console.log('System Health Check:', health);
+        // Replace page content with health check results in JSON format for monitoring
+        document.body.innerHTML = `<pre style="font-family: monospace; padding: 20px; background: #0f0f0f; color: #00ff00;">${JSON.stringify(health, null, 2)}</pre>`;
+      });
+    }
   }, []);
 
   return (
-    <div className="min-h-screen bg-black text-white overflow-hidden">
+    <LazyWrapper fallback={
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="text-lg">Loading 4site.pro...</div>
+      </div>
+    }>
+      <ErrorBoundary>
+        <div className="min-h-screen bg-black text-white overflow-hidden">
       {/* Premium Background */}
       <div className="fixed inset-0 z-0">
         <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-blue-900/20 to-black" />
@@ -105,9 +251,37 @@ const App: React.FC = () => {
                 <button className="px-4 py-2 text-sm font-medium text-white/70 hover:text-white transition-colors">
                   Pricing
                 </button>
-                <button className="px-4 py-2 text-sm font-medium rounded-lg bg-gradient-to-r from-yellow-400 to-orange-500 text-black hover:shadow-lg hover:shadow-yellow-400/25 transition-all">
-                  Get Started
-                </button>
+                
+                {/* Authentication Controls */}
+                {authLoading ? (
+                  <div className="w-8 h-8 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin"></div>
+                ) : user ? (
+                  <div className="flex items-center space-x-3">
+                    <div className="text-sm text-white/70">
+                      {profile?.tier && (
+                        <span className="px-2 py-1 text-xs bg-yellow-400/20 text-yellow-300 rounded uppercase font-semibold">
+                          {profile.tier}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-sm text-white/90">
+                      {user.email}
+                    </div>
+                    <button 
+                      onClick={signOut}
+                      className="px-4 py-2 text-sm font-medium text-white/70 hover:text-white transition-colors"
+                    >
+                      Sign Out
+                    </button>
+                  </div>
+                ) : (
+                  <button 
+                    onClick={() => setShowLoginModal(true)}
+                    className="px-4 py-2 text-sm font-medium rounded-lg bg-gradient-to-r from-yellow-400 to-orange-500 text-black hover:shadow-lg hover:shadow-yellow-400/25 transition-all"
+                  >
+                    Sign In
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -143,20 +317,33 @@ const App: React.FC = () => {
                     <input
                       type="text"
                       value={repoUrl}
-                      onChange={(e) => setRepoUrl(e.target.value)}
+                      onChange={handleInputChange}
                       placeholder="Enter GitHub repo (e.g., aegntic/DAILYDOCO or full URL)..."
                       className="flex-1 bg-transparent px-6 py-4 text-white placeholder-white/40 focus:outline-none"
                       disabled={loading}
                     />
                     <button
                       type="submit"
-                      disabled={loading || !repoUrl.trim()}
+                      disabled={loading || !debouncedRepoUrl.trim()}
                       className="px-8 py-4 bg-gradient-to-r from-yellow-400 to-orange-500 text-black font-semibold rounded-xl hover:shadow-lg hover:shadow-yellow-400/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {loading ? 'Generating...' : 'Generate Site'}
                     </button>
                   </div>
                 </div>
+                
+                {/* URL Preview */}
+                {showPreview && debouncedPreviewUrl && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-4 p-3 backdrop-blur-xl bg-yellow-500/10 border border-yellow-400/30 rounded-xl text-center"
+                  >
+                    <span className="text-sm text-yellow-300">
+                      Will generate: <span className="font-mono text-yellow-200">{debouncedPreviewUrl}</span>
+                    </span>
+                  </motion.div>
+                )}
               </form>
 
               {error && (
@@ -201,17 +388,30 @@ const App: React.FC = () => {
 
         {appState === AppState.Loading && (
           <div className="flex items-center justify-center min-h-screen">
-            <div className="text-center">
-              <div className="w-16 h-16 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-xl text-white/60">Analyzing repository...</p>
-            </div>
+            <LazyWrapper>
+              <AIGenerationLoader
+                isLoading={true}
+                stage={isRetrying ? 'retrying' : 'analyzing'}
+                progress={isRetrying ? (currentAttempt / 3) * 100 : 25}
+                message={isRetrying ? `Retrying generation (${currentAttempt}/3)` : 'Analyzing repository and generating site...'}
+                substeps={[
+                  'Fetching repository data',
+                  'Analyzing README content',
+                  'Processing with AI',
+                  'Generating site structure',
+                  'Finalizing design'
+                ]}
+                estimatedTime={30000}
+                startTime={generationStartTime || undefined}
+              />
+            </LazyWrapper>
           </div>
         )}
 
         {appState === AppState.Success && siteData && (
           <div className="relative">
             {/* Demo Mode Banner */}
-            {siteData.aiModel === 'demo-mode' && (
+            {siteData.generatedBy === 'demo-mode' && (
               <motion.div
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -231,7 +431,9 @@ const App: React.FC = () => {
             )}
             
             {/* Site Preview */}
-            <SimplePreviewTemplate siteData={siteData} />
+            <LazyWrapper>
+              <SimplePreviewTemplate siteData={siteData} />
+            </LazyWrapper>
             
             {/* Floating Action Bar */}
             <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
@@ -317,8 +519,43 @@ const App: React.FC = () => {
             </AnimatePresence>
           </div>
         )}
+
+        {/* Login Modal */}
+        {showLoginModal && (
+          <LazyWrapper>
+            <LoginModal 
+              isOpen={showLoginModal} 
+              onClose={() => setShowLoginModal(false)} 
+            />
+          </LazyWrapper>
+        )}
+
+        {/* Conversion Prompt */}
+        {showSignupPrompt && (
+          <LazyWrapper>
+            <ConversionPrompt
+              isOpen={showSignupPrompt}
+              onClose={() => setShowSignupPrompt(false)}
+              onSignUp={handleSignUpFromPrompt}
+              generationCount={anonymousGenerations}
+            />
+          </LazyWrapper>
+        )}
+
+        {/* Floating Feedback Button */}
+        <LazyWrapper>
+          <FloatingFeedbackButton />
+        </LazyWrapper>
+
+        {/* Performance Monitor */}
+        <PerformanceMonitor 
+          isVisible={perfMonitorVisible} 
+          onToggle={togglePerfMonitor} 
+        />
+        </div>
       </div>
-    </div>
+      </ErrorBoundary>
+    </LazyWrapper>
   );
 };
 
