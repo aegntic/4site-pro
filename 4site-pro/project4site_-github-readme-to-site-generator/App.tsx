@@ -19,6 +19,25 @@ const App: React.FC = () => {
     e.preventDefault();
     if (!repoUrl.trim()) return;
 
+    // Smart URL processing - automatically format GitHub repository shortcuts
+    let processedUrl = repoUrl.trim();
+    
+    // Convert "owner/repo" format to full GitHub URL
+    if (processedUrl.match(/^[a-zA-Z0-9._-]+\/[a-zA-Z0-9._-]+$/)) {
+      processedUrl = `https://github.com/${processedUrl}`;
+    }
+    // Convert "github.com/owner/repo" to full URL
+    else if (processedUrl.match(/^github\.com\/[a-zA-Z0-9._-]+\/[a-zA-Z0-9._-]+$/)) {
+      processedUrl = `https://${processedUrl}`;
+    }
+    // Ensure https:// prefix for other github.com URLs
+    else if (processedUrl.startsWith('github.com/')) {
+      processedUrl = `https://${processedUrl}`;
+    }
+
+    // Update the display URL
+    setRepoUrl(processedUrl);
+
     // OpenRouter API key is handled automatically in the service
     // No need for manual API key validation here
 
@@ -27,7 +46,7 @@ const App: React.FC = () => {
     setAppState(AppState.Loading);
 
     try {
-      const data = await generateSiteContentFromUrl(repoUrl);
+      const data = await generateSiteContentFromUrl(processedUrl);
       
       // Ensure we have a valid SiteData object, not a string
       if (!data || typeof data === 'string') {
@@ -122,10 +141,10 @@ const App: React.FC = () => {
                   <div className="absolute -inset-1 bg-gradient-to-r from-yellow-400 via-orange-500 to-pink-500 rounded-2xl blur opacity-25 group-hover:opacity-75 transition duration-1000"></div>
                   <div className="relative flex items-center backdrop-blur-xl bg-white/5 rounded-2xl border border-white/10 p-2">
                     <input
-                      type="url"
+                      type="text"
                       value={repoUrl}
                       onChange={(e) => setRepoUrl(e.target.value)}
-                      placeholder="Enter GitHub repository URL..."
+                      placeholder="Enter GitHub repo (e.g., aegntic/DAILYDOCO or full URL)..."
                       className="flex-1 bg-transparent px-6 py-4 text-white placeholder-white/40 focus:outline-none"
                       disabled={loading}
                     />
