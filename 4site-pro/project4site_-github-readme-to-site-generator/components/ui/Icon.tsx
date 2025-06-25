@@ -2,11 +2,11 @@ import React from 'react';
 import type { LucideProps } from 'lucide-react';
 // Using direct imports for the icons for this environment.
 import { 
-  Rocket, Zap, BrainCircuit, Palette, Share2, Github, ShieldCheck, PlayCircle, LoaderCircle, Sparkles, Twitter, Linkedin, Facebook, Link as LinkIcon, ArrowLeft, ExternalLink, ListChecks, Eye, Cpu, TerminalSquare, Download, GitFork, ScrollText, FileText, Puzzle, CheckCircle2, AlertTriangle, AlertCircle, Info, X 
+  Rocket, Zap, BrainCircuit, Palette, Share2, Github, ShieldCheck, PlayCircle, LoaderCircle, Sparkles, Twitter, Linkedin, Facebook, Link as LinkIcon, ArrowLeft, ExternalLink, ListChecks, Eye, Cpu, TerminalSquare, Download, GitFork, ScrollText, FileText, Puzzle, CheckCircle2, AlertTriangle, AlertCircle, Info, X, Check, Heart, Users, CreditCard, Shield 
 } from 'lucide-react';
 
 const iconComponents: Record<string, React.ComponentType<LucideProps>> = {
-  Rocket, Zap, BrainCircuit, Palette, Share2, Github, ShieldCheck, PlayCircle, LoaderCircle, Sparkles, Twitter, Linkedin, Facebook, Link: LinkIcon, ArrowLeft, ExternalLink, ListChecks, Eye, Cpu, TerminalSquare, Download, GitFork, ScrollText, FileText, Puzzle, CheckCircle2, AlertTriangle, AlertCircle, Info, X
+  Rocket, Zap, BrainCircuit, Palette, Share2, Github, ShieldCheck, PlayCircle, LoaderCircle, Sparkles, Twitter, Linkedin, Facebook, Link: LinkIcon, ArrowLeft, ExternalLink, ListChecks, Eye, Cpu, TerminalSquare, Download, GitFork, ScrollText, FileText, Puzzle, CheckCircle2, AlertTriangle, AlertCircle, Info, X, Check, Heart, Users, CreditCard, Shield, 'check': Check, 'heart': Heart, 'users': Users, 'credit-card': CreditCard, 'shield': Shield, 'zap': Zap
 };
 
 

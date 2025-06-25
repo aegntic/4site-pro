@@ -120,14 +120,14 @@ export const GlassHeroSection: React.FC<GlassHeroSectionProps> = ({ onGenerateSi
               transition={{ delay: 0.7 }}
             >
               <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-light text-white tracking-tight mb-3 sm:mb-4">
-                Transform GitHub Repo
+                Living Websites That
               </h1>
               <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-normal text-white/90 mb-2 sm:mb-3">
-                into <span className="font-medium bg-gradient-to-r from-yellow-300 to-orange-400 bg-clip-text text-transparent">Self-Updating</span> Website
+                <span className="font-medium bg-gradient-to-r from-yellow-300 to-orange-400 bg-clip-text text-transparent">Update Themselves</span> as You Build
               </p>
               <p className="text-xs sm:text-sm font-light text-white/70 max-w-xl lg:max-w-2xl mx-auto px-2">
-                Let's transform your repository into a stunning website powered by aegntic.ai technology. 
-                No signup required, instant generation with beautiful visuals.
+                Get online instantly while learning to build digitally. Your website creates blog posts automatically at development checkpoints. 
+                Focus on building - we handle the marketing noise.
               </p>
             </motion.div>
           </div>
@@ -162,10 +162,10 @@ export const GlassHeroSection: React.FC<GlassHeroSectionProps> = ({ onGenerateSi
               className="mt-6 sm:mt-8 grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4"
             >
               {[
-                { icon: '✨', label: 'FLUX.1 Visuals' },
-                { icon: '🔄', label: 'Self-Updating' },
-                { icon: '⚡', label: '15 Seconds' },
-                { icon: '🔒', label: 'Privacy Safe' }
+                { icon: '🚀', label: 'Auto Blog Posts' },
+                { icon: '🔄', label: 'Living Websites' },
+                { icon: '⚡', label: '2min FREE' },
+                { icon: '🌟', label: 'Network Visibility' }
               ].map((feature, index) => (
                 <motion.div
                   key={feature.label}
@@ -194,9 +194,9 @@ export const GlassHeroSection: React.FC<GlassHeroSectionProps> = ({ onGenerateSi
                   onClick={onShowModeSelection}
                   className="text-sm font-normal text-white/70 hover:text-white transition-colors group"
                 >
-                  Want premium features? 
+                  Want faster generation & network visibility? 
                   <span className="text-white font-medium ml-1 group-hover:underline">
-                    Explore advanced modes →
+                    Explore PRO ($49.49/month) →
                   </span>
                 </button>
               </motion.div>

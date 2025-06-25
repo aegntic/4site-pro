@@ -13,10 +13,10 @@ export const PremiumHero: React.FC<PremiumHeroProps> = ({ onGenerateRequest }) =
   
   // Animated text variations
   const headlines = [
-    "Transform GitHub Repos into $100B Experiences",
-    "Enterprise-Grade Sites in 30 Seconds",
-    "Where Code Meets Billion-Dollar Design",
-    "AI-Powered Perfection for Your Projects"
+    "Living Websites That Update Themselves",
+    "Network Visibility Among Industry Leaders",
+    "Professional Recognition Through Quality Work",
+    "Automated Content Creation at Dev Checkpoints"
   ];
   
   const [currentHeadline, setCurrentHeadline] = useState(0);

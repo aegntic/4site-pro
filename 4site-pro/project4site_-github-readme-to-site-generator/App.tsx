@@ -18,9 +18,13 @@ import {
   AIGenerationLoader,
   preloadComponents
 } from './components/LazyComponents';
+import CommissionDashboard from './components/admin/CommissionDashboard';
 import { PerformanceMonitor, usePerformanceMonitor } from './components/monitoring/PerformanceMonitor';
+import { UpdatedMainSection } from './components/sections/UpdatedMainSection';
 import './index.css';
 import './styles/glassmorphism.css';
+import './styles/developer-brand.css';
+import './styles/enterprise-professional.css';
 
 const App: React.FC = () => {
   // Performance monitoring
@@ -46,6 +50,7 @@ const App: React.FC = () => {
   const [showDeployPopup, setShowDeployPopup] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [generationStartTime, setGenerationStartTime] = useState<number | null>(null);
+  const [showAdminDashboard, setShowAdminDashboard] = useState(false);
   
   // Optimized state with debouncing
   const [debouncedRepoUrl, setRepoUrl, repoUrl] = useDebouncedState<string>('', 150);
@@ -56,6 +61,11 @@ const App: React.FC = () => {
   const showPreview = useMemoizedValue(() => {
     return debouncedPreviewUrl.length > 0;
   }, [debouncedPreviewUrl], 'showPreview');
+
+  // Check if user is admin (simplified check for demo - would use proper role-based auth in production)
+  const isAdmin = useMemoizedValue(() => {
+    return user?.email?.includes('admin') || user?.email?.includes('tabs') || showAdminDashboard;
+  }, [user?.email, showAdminDashboard], 'isAdmin');
 
   // Enhanced site generation with retry logic
   const { execute: executeGeneration, isRetrying, currentAttempt } = useRetry(
@@ -227,59 +237,70 @@ const App: React.FC = () => {
 
       {/* Main Content */}
       <div className="relative z-10">
-        {/* Navigation */}
-        <nav className="sticky top-0 z-50 backdrop-blur-xl bg-black/30 border-b border-white/10">
+        {/* Developer-Friendly Navigation */}
+        <nav className="sticky top-0 z-50 bg-glass border-b border-[var(--border-primary)]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
               <div className="flex items-center space-x-3">
-                <img 
-                  src="/4sitepro-logo.png" 
-                  alt="4site.pro" 
-                  className="w-8 h-8 rounded-lg"
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                  }}
-                />
-                <span className="text-xl font-bold bg-gradient-to-r from-white to-yellow-400 bg-clip-text text-transparent">
-                  project4site
+                <div className="w-8 h-8 bg-gradient-to-br from-[var(--vs-code-blue)] to-[var(--terminal-green)] rounded font-mono text-xs flex items-center justify-center text-[var(--text-primary)] font-bold">
+                  4S
+                </div>
+                <span className="text-xl font-bold font-mono text-[var(--text-primary)]">
+                  <span className="text-[var(--vs-code-blue)]">project</span>
+                  <span className="text-[var(--terminal-green)]">4site</span>
+                  <span className="text-[var(--syntax-comment)]">.pro</span>
                 </span>
               </div>
               <div className="flex items-center space-x-4">
-                <button className="px-4 py-2 text-sm font-medium text-white/70 hover:text-white transition-colors">
-                  Features
+                <button className="px-4 py-2 text-sm font-mono text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
+                  <span className="text-[var(--syntax-comment)]">#</span> features
                 </button>
-                <button className="px-4 py-2 text-sm font-medium text-white/70 hover:text-white transition-colors">
-                  Pricing
+                <button className="px-4 py-2 text-sm font-mono text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
+                  <span className="text-[var(--syntax-comment)]">$</span> pricing
                 </button>
+                
+                {/* Admin Dashboard Access */}
+                {isAdmin && (
+                  <button 
+                    onClick={() => setShowAdminDashboard(!showAdminDashboard)}
+                    className={`px-4 py-2 text-sm font-mono transition-colors ${
+                      showAdminDashboard 
+                        ? 'text-[var(--terminal-green)] bg-[var(--terminal-green)]/10' 
+                        : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                    }`}
+                  >
+                    <span className="text-[var(--syntax-comment)]">@</span> admin
+                  </button>
+                )}
                 
                 {/* Authentication Controls */}
                 {authLoading ? (
-                  <div className="w-8 h-8 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin"></div>
+                  <div className="w-8 h-8 border-2 border-[var(--vs-code-blue)] border-t-transparent rounded-full animate-spin"></div>
                 ) : user ? (
                   <div className="flex items-center space-x-3">
-                    <div className="text-sm text-white/70">
+                    <div className="text-sm text-[var(--text-secondary)]">
                       {profile?.tier && (
-                        <span className="px-2 py-1 text-xs bg-yellow-400/20 text-yellow-300 rounded uppercase font-semibold">
+                        <span className="px-2 py-1 text-xs bg-[var(--terminal-green)]/20 text-[var(--terminal-green)] rounded font-mono">
                           {profile.tier}
                         </span>
                       )}
                     </div>
-                    <div className="text-sm text-white/90">
+                    <div className="text-sm text-[var(--text-primary)] font-mono">
                       {user.email}
                     </div>
                     <button 
                       onClick={signOut}
-                      className="px-4 py-2 text-sm font-medium text-white/70 hover:text-white transition-colors"
+                      className="px-4 py-2 text-sm font-mono text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
                     >
-                      Sign Out
+                      logout
                     </button>
                   </div>
                 ) : (
                   <button 
                     onClick={() => setShowLoginModal(true)}
-                    className="px-4 py-2 text-sm font-medium rounded-lg bg-gradient-to-r from-yellow-400 to-orange-500 text-black hover:shadow-lg hover:shadow-yellow-400/25 transition-all"
+                    className="px-4 py-2 text-sm font-mono rounded-lg bg-[var(--interactive-primary)] text-[var(--text-inverse)] hover:bg-[var(--interactive-primary-hover)] transition-all"
                   >
-                    Sign In
+                    auth
                   </button>
                 )}
               </div>
@@ -287,106 +308,60 @@ const App: React.FC = () => {
           </div>
         </nav>
 
-        {appState === AppState.Idle && (
-          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-            {/* Hero Section */}
-            <motion.section 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center mb-20"
-            >
-              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold mb-6">
-                <span className="bg-gradient-to-r from-white via-yellow-200 to-yellow-400 bg-clip-text text-transparent">
-                  Transform GitHub Repos
-                </span>
-                <br />
-                <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-                  Into Premium Websites
-                </span>
-              </h1>
-              <p className="text-xl text-white/60 mb-12 max-w-3xl mx-auto">
-                AI-powered site generation that creates stunning, production-ready websites 
-                from your GitHub repositories in under 30 seconds.
-              </p>
+        {/* Admin Dashboard */}
+        {showAdminDashboard && (
+          <LazyWrapper>
+            <CommissionDashboard />
+          </LazyWrapper>
+        )}
 
-              {/* Input Form */}
-              <form onSubmit={handleSubmit} className="max-w-2xl mx-auto">
-                <div className="relative group">
-                  <div className="absolute -inset-1 bg-gradient-to-r from-yellow-400 via-orange-500 to-pink-500 rounded-2xl blur opacity-25 group-hover:opacity-75 transition duration-1000"></div>
-                  <div className="relative flex items-center backdrop-blur-xl bg-white/5 rounded-2xl border border-white/10 p-2">
-                    <input
-                      type="text"
-                      value={repoUrl}
-                      onChange={handleInputChange}
-                      placeholder="Enter GitHub repo (e.g., aegntic/DAILYDOCO or full URL)..."
-                      className="flex-1 bg-transparent px-6 py-4 text-white placeholder-white/40 focus:outline-none"
-                      disabled={loading}
-                    />
-                    <button
-                      type="submit"
-                      disabled={loading || !debouncedRepoUrl.trim()}
-                      className="px-8 py-4 bg-gradient-to-r from-yellow-400 to-orange-500 text-black font-semibold rounded-xl hover:shadow-lg hover:shadow-yellow-400/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {loading ? 'Generating...' : 'Generate Site'}
-                    </button>
-                  </div>
-                </div>
-                
-                {/* URL Preview */}
-                {showPreview && debouncedPreviewUrl && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mt-4 p-3 backdrop-blur-xl bg-yellow-500/10 border border-yellow-400/30 rounded-xl text-center"
-                  >
-                    <span className="text-sm text-yellow-300">
-                      Will generate: <span className="font-mono text-yellow-200">{debouncedPreviewUrl}</span>
-                    </span>
-                  </motion.div>
-                )}
-              </form>
+        {!showAdminDashboard && appState === AppState.Idle && (
+          <main>
+            {/* Updated Main Section with all modernized components */}
+            <UpdatedMainSection 
+              onGenerateSite={(repoUrl) => {
+                setRepoUrl(repoUrl);
+                setPreviewUrl(repoUrl.includes('github.com') ? repoUrl : `https://github.com/${repoUrl}`);
+                // Trigger form submission automatically
+                setTimeout(() => {
+                  const form = document.querySelector('form') as HTMLFormElement;
+                  if (form) form.requestSubmit();
+                }, 100);
+              }}
+              onSelectTier={(tier) => {
+                console.log('Selected tier:', tier);
+                // Handle tier selection
+              }}
+              onUpgrade={(tier) => {
+                console.log('Upgrade to tier:', tier);
+                // Handle upgrade action
+              }}
+            />
 
-              {error && (
+            {/* Error Display */}
+            {error && (
+              <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="mt-4 p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400"
+                  className="p-4 bg-glass border border-red-500/30 rounded-lg text-red-400 mb-8"
                 >
-                  {error}
+                  <div className="font-mono text-sm">
+                    <span className="text-gray-500"># Error:</span> {error}
+                  </div>
                 </motion.div>
-              )}
-            </motion.section>
+              </div>
+            )}
 
-            {/* Features Grid */}
-            <motion.section
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.2 }}
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-20"
-            >
-              {[
-                { icon: '⚡', title: 'Lightning Fast', desc: 'Generate complete websites in under 30 seconds' },
-                { icon: '🎨', title: 'Premium Design', desc: 'Beautiful, modern templates with glass morphism UI' },
-                { icon: '🤖', title: 'AI-Powered', desc: 'Advanced AI analyzes your code and creates perfect content' },
-                { icon: '📱', title: 'Fully Responsive', desc: 'Looks perfect on all devices, from mobile to 8K displays' },
-                { icon: '🚀', title: 'Deploy Anywhere', desc: 'Export to Vercel, Netlify, or download the code' },
-                { icon: '🔒', title: 'Enterprise Security', desc: 'SOC2 compliant with end-to-end encryption' }
-              ].map((feature, i) => (
-                <motion.div
-                  key={i}
-                  whileHover={{ scale: 1.05, y: -5 }}
-                  className="backdrop-blur-xl bg-white/5 rounded-2xl border border-white/10 p-8 hover:bg-white/10 transition-all"
-                >
-                  <div className="text-4xl mb-4">{feature.icon}</div>
-                  <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-                  <p className="text-white/60">{feature.desc}</p>
-                </motion.div>
-              ))}
-            </motion.section>
+            {/* Hidden form for programmatic submission */}
+            <form onSubmit={handleSubmit} style={{ display: 'none' }}>
+              <input type="text" value={debouncedRepoUrl} readOnly />
+              <button type="submit">Submit</button>
+            </form>
           </main>
         )}
 
-        {appState === AppState.Loading && (
+        {!showAdminDashboard && appState === AppState.Loading && (
           <div className="flex items-center justify-center min-h-screen">
             <LazyWrapper>
               <AIGenerationLoader
@@ -408,7 +383,7 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {appState === AppState.Success && siteData && (
+        {!showAdminDashboard && appState === AppState.Success && siteData && (
           <div className="relative">
             {/* Demo Mode Banner */}
             {siteData.generatedBy === 'demo-mode' && (

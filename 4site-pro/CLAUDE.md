@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**4site.pro** is an AI-powered platform that transforms GitHub repositories into professional, stunning websites in under 60 seconds. The project uses Google Gemini AI to analyze README files and generate complete landing pages with modern glass morphism UI design.
+**4site.pro** is an AI-powered platform that transforms GitHub repositories into **living, self-updating websites** that automatically create blog posts and content updates as you build. The core value is **automated content creation** - allowing developers to focus on building while their website handles the "marketing noise" automatically.
+
+**Key Innovation**: Websites don't just generate once - they continuously update themselves and create blog posts at development checkpoints, eliminating the need for developers to manually create content about their progress.
 
 ### Current Status
 - **MVP Stage**: Functional React/Vite application in `project4site_-github-readme-to-site-generator/`
@@ -320,5 +322,126 @@ const DEEP_TIMEOUT = 300000;  // 5 minutes
 const ANIMATION_DURATION = 0.5;
 const GLASS_BLUR = 10;  // pixels
 ```
+
+## CRITICAL BUSINESS MODEL & POSITIONING (June 2025)
+
+### 🎯 **Tier Structure & Pricing Strategy**
+
+#### 🆓 **FREE Tier - $0** (tip our devs $4.94 for custom domains):
+- **5 auto-updating websites** (perfect for learning builders)
+- **Automated blog posts** at development checkpoints
+- 8 professional templates
+- **No ads** - elegant PRO member featuring only
+- **Get online instantly** while learning to build digitally
+- **Custom domains**: $4.94 one-time tip OR free via Porkbun affiliate link
+
+#### 💼 **PRO Tier - $49.49/month**:
+- **111 auto-updating websites** (vs 5 free)
+- **+11 "3-month trial gift websites"** via GitHub pull request donations
+- **Advanced automated content creation** and blog generation
+- **Network visibility** among curated industry leaders
+- **Custom branding and easy edits**
+- **50 professional templates**
+- **Professional recognition** - featured in network galleries
+- **Remove platform attribution** completely
+
+#### 🏢 **BUSINESS Tier - $494.94/month** ⭐ (NEW TIER):
+- **Advanced automation** (team development milestones → content)
+- **Team collaboration** (5-10 users)
+- **Advanced integrations** (Slack, Jira, Linear webhooks)
+- **Custom brand identity** throughout all team sites
+- **Priority support** (1-hour response)
+- **Advanced analytics** (team content performance)
+- **API access** (full REST/GraphQL)
+- **White-label for clients** (reseller ready)
+
+#### 🏛️ **ENTERPRISE Tier - $4,949.49/month**:
+- **Custom AI content training** on your company's voice/style
+- **On-premise deployment** with private content generation
+- **Unlimited users** and automated websites
+- **Custom automation triggers** (any development event → content)
+- **SLA guarantees** (99.99% uptime)
+- **Dedicated account manager** and content strategy team
+
+### 🚨 **CRITICAL CONTENT GUIDELINES**
+
+#### ❌ **NEVER INCLUDE:**
+- **ROI claims or earnings projections** ("earn $200-800/month", "400% ROI", etc.)
+- **Financial return promises** or commission earning amounts
+- **Investment language** ("return on investment", "break-even", etc.)
+- **Income opportunity marketing** 
+
+#### ✅ **ALWAYS FOCUS ON:**
+- **Professional network visibility** among industry leaders
+- **Recognition and credibility** in the builder community  
+- **Collaboration opportunities** through curated networks
+- **Professional showcase** and peer visibility
+- **Industry connections** with fellow builders
+- **Reputation building** through quality work demonstration
+
+### 🔄 **Updated AI Models (June 2025)**
+- **FREE**: DeepSeek R1.1, Claude 4, GPT-5, Gemma 3 (multi-model ensemble)
+- **PRO**: Premium versions with enhanced capabilities
+- **Generation Times**: FREE (2 minutes) → PRO (sub 1-minute) → BUSINESS (ultra-fast, 2x PRO) → ENTERPRISE (9 seconds)
+- **NEVER reference outdated models** like "gemini-2.0-flash-exp"
+
+### 💰 **Brilliant Pricing Psychology**
+- **10x jumps create clear value tiers**: $0 → $49.49 → $494.94 → $4,949.49
+- **".49" endings** position as premium but accessible (not round corporate pricing)
+- **Gift websites feature** creates viral growth through GitHub pull requests
+- **Tip jar option** for FREE tier creates optional revenue without barrier
+- **111 websites** (vs unlimited) creates scarcity psychology while being generous
+
+### 🤖 **Core Value Proposition: Automated Content Creation**
+**The real innovation is NOT generation speed - it's continuous automated content creation:**
+- **Living websites** that update themselves as you build
+- **Automated blog posts** at development checkpoints
+- **Focus on building** instead of creating "marketing noise"
+- **Get online instantly** while learning to build (FREE tier value)
+- **Network featuring** instead of ads (elegant monetization)
+
+### 🤝 **Strategic Partnership Framework**
+
+#### **Domain Strategy: Porkbun Partnership**
+- **FREE**: Manual domain connection from any provider
+- **Enhanced**: $4.94 one-time tip unlocks direct Porkbun integration  
+- **Affiliate Option**: Free domains through Porkbun partnership
+- **Why Porkbun**: Developer-friendly, transparent pricing, quality service
+
+#### **Complementary Services (Tier 1 Priority)**
+1. **Vercel** - Automatic deployment matches automated content
+2. **Plausible Analytics** - Privacy-first analytics for developers
+3. **ConvertKit** - Email automation for audience building
+4. **Polar.sh** - Developer-friendly monetization and tip jars (WAY cooler than Stripe)
+
+#### **Partnership Criteria**
+- ✅ Developer-first culture
+- ✅ Simple, clean UX (no enterprise bloat)  
+- ✅ Fair, transparent pricing
+- ✅ Complements without complicating
+- ❌ Enterprise-sales-heavy approach
+- ❌ Competing with core automation value
+
+### 🌐 **Network Effects Value Proposition**
+The $49 PRO tier pricing captures the true value of:
+- **Curated network access** to industry leaders and serious builders
+- **Professional visibility** in exclusive galleries and showcases
+- **Peer recognition** system for quality work
+- **Collaboration pipeline** through network connections
+- **Community building** among professional creators
+
+### 🎯 **Viral Growth Strategy**
+- **Quality-driven network effects** (not financial incentives)
+- **Professional showcase systems** that encourage sharing
+- **Peer recognition mechanisms** that drive engagement
+- **Community building** around professional development
+- **Organic growth** through network visibility and collaboration
+
+### 📊 **Success Metrics**
+- **Network engagement** over financial metrics
+- **Professional connections** made through platform
+- **Quality of work** showcased in community
+- **Collaboration opportunities** generated
+- **Reputation building** and credibility establishment
 
 This project is part of the larger ae-co-system and will eventually integrate with DailyDoco Pro, aegnt-27, and other ecosystem services.

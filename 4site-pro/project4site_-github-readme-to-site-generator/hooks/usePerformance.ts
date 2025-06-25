@@ -53,7 +53,7 @@ export const useComponentPerformance = (componentName: string) => {
         });
       }
     };
-  });
+  }, []); // Add empty dependency array to prevent infinite loop
 
   // Memory usage monitoring (if available)
   useEffect(() => {
@@ -380,6 +380,37 @@ export const usePerformanceBudget = (budgets: {
   };
 };
 
+/**
+ * Generic intersection observer hook
+ */
+export const useIntersectionObserver = (options: IntersectionObserverInit = {}) => {
+  const [isIntersecting, setIsIntersecting] = useState(false);
+  const [element, setElement] = useState<HTMLElement | null>(null);
+  
+  useEffect(() => {
+    if (!element) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsIntersecting(entry.isIntersecting);
+      },
+      {
+        threshold: 0.1,
+        rootMargin: '0px',
+        ...options
+      }
+    );
+
+    observer.observe(element);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [element, options]);
+
+  return [setElement, isIntersecting] as const;
+};
+
 export default {
   useComponentPerformance,
   useMemoizedValue,
@@ -388,5 +419,6 @@ export default {
   useVirtualScroll,
   useLazyImage,
   useBundleMonitoring,
-  usePerformanceBudget
+  usePerformanceBudget,
+  useIntersectionObserver
 };

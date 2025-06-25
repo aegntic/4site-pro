@@ -47,11 +47,56 @@ async function generateEnhancedSiteContent(repoUrl: string, apiKey?: string, mod
   const readmeData = await response.json();
   const readmeContent = atob(readmeData.content);
   
-  const prompt = `Analyze this GitHub repository README and generate structured site content:
+  // Fetch additional repository data for comprehensive analysis
+  const repoApiUrl = `https://api.github.com/repos/${owner}/${repo}`;
+  const [repoResponse, languagesResponse, contentsResponse] = await Promise.allSettled([
+    fetch(repoApiUrl),
+    fetch(`${repoApiUrl}/languages`),
+    fetch(`${repoApiUrl}/contents`)
+  ]);
 
-Repository: ${owner}/${repo}
-README Content:
+  let repoData = null;
+  let languages = null;
+  let contents = null;
+
+  if (repoResponse.status === 'fulfilled' && repoResponse.value.ok) {
+    repoData = await repoResponse.value.json();
+  }
+  if (languagesResponse.status === 'fulfilled' && languagesResponse.value.ok) {
+    languages = await languagesResponse.value.json();
+  }
+  if (contentsResponse.status === 'fulfilled' && contentsResponse.value.ok) {
+    contents = await contentsResponse.value.json();
+  }
+
+  const prompt = `Perform comprehensive repository analysis and generate a professional website. This is NOT just a README converter - analyze the entire repository structure, technology stack, and codebase patterns:
+
+REPOSITORY DATA:
+- Repository: ${owner}/${repo}
+- URL: ${repoUrl}
+- Description: ${repoData?.description || 'No description'}
+- Stars: ${repoData?.stargazers_count || 0}
+- Forks: ${repoData?.forks_count || 0}
+- Language: ${repoData?.language || 'Unknown'}
+- Created: ${repoData?.created_at || 'Unknown'}
+- Last Updated: ${repoData?.updated_at || 'Unknown'}
+- Topics: ${repoData?.topics?.join(', ') || 'None'}
+- Homepage: ${repoData?.homepage || 'None'}
+
+TECHNOLOGY STACK:
+${languages ? Object.entries(languages).map(([lang, bytes]) => `- ${lang}: ${Math.round((bytes as number) / 1000)}KB`).join('\n') : 'Languages data not available'}
+
+REPOSITORY STRUCTURE:
+${contents ? contents.slice(0, 20).map((item: any) => `- ${item.name} (${item.type})`).join('\n') : 'Structure data not available'}
+
+README CONTENT:
 ${readmeContent}
+
+1. **Complete Technology Analysis** - Not just what's in the README, but actual codebase patterns, architecture decisions, and technical implementation
+2. **Professional Project Presentation** - Enterprise-grade documentation and feature showcase
+3. **Comprehensive Feature Extraction** - Based on both documentation and actual code structure
+4. **Deployment and Integration Guides** - Practical implementation information
+5. **Architecture and Dependencies** - Technical depth that showcases the full project scope
 
 Please analyze this and provide a JSON response with:
 {

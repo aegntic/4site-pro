@@ -7,15 +7,7 @@ export default defineConfig(({ mode }) => {
     
     return {
       plugins: [
-        react({
-          // Enable React fast refresh in development
-          fastRefresh: process.env.NODE_ENV !== 'production',
-          babel: {
-            plugins: process.env.NODE_ENV === 'production' 
-              ? [['transform-remove-console', { exclude: ['error', 'warn'] }]]
-              : []
-          }
-        })
+        react()
       ],
       define: {
         'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
@@ -52,7 +44,7 @@ export default defineConfig(({ mode }) => {
               'ai-services': ['./services/geminiService'],
               
               // Authentication and context
-              'auth-vendor': ['./contexts/AuthContext', './hooks/useAuth'],
+              'auth-vendor': ['./contexts/AuthContext'],
               
               // Performance and utilities
               'performance': ['./hooks/usePerformance', './utils/serviceWorker'],
