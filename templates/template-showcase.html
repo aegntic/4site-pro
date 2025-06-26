@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4site.pro Premium Template Showcase</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #ffffff;
+            padding: 2rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #667eea, #764ba2, #f093fb);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .templates-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .template-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .template-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(102, 126, 234, 0.3);
+            border-color: #667eea;
+        }
+
+        .template-header {
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .template-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: #667eea;
+        }
+
+        .template-description {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
+        }
+
+        .template-preview {
+            position: relative;
+            height: 400px;
+            overflow: hidden;
+        }
+
+        .template-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            transform: scale(0.5);
+            transform-origin: top left;
+            width: 200%;
+            height: 200%;
+        }
+
+        .template-actions {
+            padding: 1.5rem;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .template-button {
+            flex: 1;
+            padding: 0.8rem 1.5rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            text-decoration: none;
+            text-align: center;
+            border-radius: 10px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .template-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .template-button.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .status {
+            text-align: center;
+            margin-top: 3rem;
+            padding: 2rem;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 10px;
+            color: #10b981;
+        }
+
+        .status h2 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .templates-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>4site.pro Premium Templates</h1>
+        <p>Production-ready website templates for elite developers</p>
+    </div>
+
+    <div class="templates-grid">
+        <div class="template-card">
+            <div class="template-header">
+                <h3 class="template-title">Liquid Metal Commerce</h3>
+                <p class="template-description">Metallic e-commerce design with liquid animations</p>
+            </div>
+            <div class="template-preview">
+                <iframe class="template-iframe" src="preview-liquid-metal-commerce.html"></iframe>
+            </div>
+            <div class="template-actions">
+                <a href="preview-liquid-metal-commerce.html" target="_blank" class="template-button">View Full</a>
+                <a href="liquid-metal-commerce.html" class="template-button secondary">Source</a>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="template-header">
+                <h3 class="template-title">Motion Design System</h3>
+                <p class="template-description">Animation portfolio with advanced motion graphics</p>
+            </div>
+            <div class="template-preview">
+                <iframe class="template-iframe" src="preview-motion-design-system.html"></iframe>
+            </div>
+            <div class="template-actions">
+                <a href="preview-motion-design-system.html" target="_blank" class="template-button">View Full</a>
+                <a href="motion-design-system.html" class="template-button secondary">Source</a>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="template-header">
+                <h3 class="template-title">Glassmorphism Dashboard</h3>
+                <p class="template-description">Glass UI dashboard with blur effects</p>
+            </div>
+            <div class="template-preview">
+                <iframe class="template-iframe" src="preview-glassmorphism-dashboard.html"></iframe>
+            </div>
+            <div class="template-actions">
+                <a href="preview-glassmorphism-dashboard.html" target="_blank" class="template-button">View Full</a>
+                <a href="glassmorphism-dashboard.html" class="template-button secondary">Source</a>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="template-header">
+                <h3 class="template-title">Cyberpunk Terminal</h3>
+                <p class="template-description">Terminal-style developer portfolio</p>
+            </div>
+            <div class="template-preview">
+                <iframe class="template-iframe" src="preview-cyberpunk-terminal.html"></iframe>
+            </div>
+            <div class="template-actions">
+                <a href="preview-cyberpunk-terminal.html" target="_blank" class="template-button">View Full</a>
+                <a href="cyberpunk-terminal.html" class="template-button secondary">Source</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="status">
+        <h2>✅ All Templates Ready</h2>
+        <p>4 premium templates successfully created and integrated with 4site.pro</p>
+        <p style="margin-top: 1rem; font-size: 0.9rem; opacity: 0.8;">
+            These templates are now available in the aeltdTemplateEngine.ts service
+        </p>
+    </div>
+
+    <script>
+        // Reload iframes periodically to show animations
+        setInterval(() => {
+            document.querySelectorAll('.template-iframe').forEach(iframe => {
+                const src = iframe.src;
+                iframe.src = '';
+                setTimeout(() => {
+                    iframe.src = src;
+                }, 100);
+            });
+        }, 30000); // Every 30 seconds
+    </script>
+</body>
+</html>

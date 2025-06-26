@@ -1,0 +1,144 @@
+
+import { generateEnhancedSiteContent, ProjectMetadata, EnhancedSiteContent } from './enhancedGeminiService';
+import { SiteData, Section } from '../types';
+import { nanoid } from 'nanoid';
+
+// Convert EnhancedSiteContent to full SiteData object
+const convertToSiteData = (enhancedContent: EnhancedSiteContent, repoUrl: string): SiteData => {
+  const { markdown, metadata } = enhancedContent;
+  
+  // Parse markdown into sections
+  const sections: Section[] = [];
+  const markdownLines = markdown.split('\n');
+  let currentSection: { title: string; content: string; type: string } | null = null;
+  
+  for (let i = 0; i < markdownLines.length; i++) {
+    const line = markdownLines[i].trim();
+    
+    // Detect section headers (## heading)
+    if (line.startsWith('## ')) {
+      // Save previous section if exists
+      if (currentSection) {
+        sections.push({
+          id: currentSection.title.toLowerCase().replace(/[^a-z0-9]/g, '-'),
+          title: currentSection.title,
+          content: currentSection.content.trim(),
+          order: sections.length
+        });
+      }
+      
+      // Start new section
+      const title = line.substring(3).trim();
+      const type = title.toLowerCase().includes('feature') ? 'features' : 
+                   title.toLowerCase().includes('install') || title.toLowerCase().includes('start') ? 'installation' :
+                   title.toLowerCase().includes('overview') ? 'overview' : 'custom';
+      
+      currentSection = { title, content: '', type };
+    } else if (currentSection) {
+      // Add content to current section
+      currentSection.content += line + '\n';
+    }
+  }
+  
+  // Add final section
+  if (currentSection) {
+    sections.push({
+      id: currentSection.title.toLowerCase().replace(/[^a-z0-9]/g, '-'),
+      title: currentSection.title,
+      content: currentSection.content.trim(),
+      order: sections.length
+    });
+  }
+  
+  // Determine primary color based on tech stack
+  const getPrimaryColor = (techStack: string[]): string => {
+    const colorMap: Record<string, string> = {
+      'react': '#61DAFB',
+      'vue': '#4FC08D',
+      'angular': '#DD0031',
+      'typescript': '#3178C6',
+      'javascript': '#F7DF1E',
+      'python': '#3776AB',
+      'rust': '#000000',
+      'go': '#00ADD8',
+      'java': '#ED8B00',
+      'node.js': '#339933',
+      'docker': '#2496ED',
+      'kubernetes': '#326CE5'
+    };
+    
+    for (const tech of techStack) {
+      const key = tech.toLowerCase();
+      if (colorMap[key]) return colorMap[key];
+    }
+    return '#4A90E2'; // Default blue
+  };
+  
+  // Determine project type based on category and tech stack
+  const getProjectType = (category: string, techStack: string[]): 'tech' | 'creative' | 'business' | 'library' | 'tool' | 'other' => {
+    if (category === 'library') return 'library';
+    if (category === 'tool') return 'tool';
+    if (category === 'web' || category === 'mobile' || category === 'desktop') return 'tech';
+    
+    // Check tech stack for clues
+    const hasFramework = techStack.some(tech => 
+      ['react', 'vue', 'angular', 'svelte', 'next.js', 'nuxt'].includes(tech.toLowerCase())
+    );
+    
+    return hasFramework ? 'tech' : 'other';
+  };
+  
+  return {
+    id: nanoid(),
+    title: metadata.name,
+    description: metadata.description,
+    repoUrl,
+    githubUrl: repoUrl,
+    generatedMarkdown: markdown,
+    sections,
+    features: metadata.features,
+    techStack: metadata.techStack,
+    projectType: getProjectType(metadata.category, metadata.techStack),
+    primaryColor: getPrimaryColor(metadata.techStack),
+    template: getProjectType(metadata.category, metadata.techStack) === 'creative' ? 'CreativeProjectTemplate' : 'TechProjectTemplate',
+    tier: 'premium'
+  };
+};
+
+
+// New function that returns SiteData directly
+export const generateSiteContentFromUrl = async (repoUrl: string): Promise<SiteData> => {
+  try {
+    console.log(`Generating enhanced site content for: ${repoUrl}`);
+    
+    // Use the enhanced service to get structured content
+    const enhancedContent = await generateEnhancedSiteContent(repoUrl);
+    
+    // Convert to SiteData format that UI expects
+    const siteData = convertToSiteData(enhancedContent, repoUrl);
+    
+    console.log('Successfully generated SiteData:', {
+      title: siteData.title,
+      features: siteData.features.length,
+      techStack: siteData.techStack.length,
+      sections: siteData.sections.length
+    });
+    
+    return siteData;
+  } catch (error) {
+    console.error('Error generating site content from URL:', error);
+    
+    // Enhanced error handling with fallback
+    if (error instanceof Error) {
+      if (error.message.includes('API key')) {
+        throw new Error('Gemini API key not configured. Please check your VITE_GEMINI_API_KEY in .env.local');
+      }
+      if (error.message.includes('timeout')) {
+        throw new Error('AI request timed out. Please try again or use a different repository.');
+      }
+      throw error;
+    }
+    
+    throw new Error('Failed to generate site content. Please try again.');
+  }
+};
