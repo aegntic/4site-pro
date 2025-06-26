@@ -1,6 +1,0 @@
-{
-  "timestamp": "2025-06-25T04:19:07.917Z",
-  "status": "FAILED",
-  "error": "Navigating frame was detached",
-  "stack": "Error: Navigating frame was detached\n    at #onFrameDetached (/home/tabs/ae-co-system/project4site/4site-pro/project4site_-github-readme-to-site-generator/node_modules/puppeteer-core/lib/cjs/puppeteer/cdp/LifecycleWatcher.js:103:47)\n    at /home/tabs/ae-co-system/project4site/4site-pro/project4site_-github-readme-to-site-generator/node_modules/puppeteer-core/lib/cjs/third_party/mitt/mitt.js:62:7\n    at Array.map (<anonymous>)\n    at Object.emit (/home/tabs/ae-co-system/project4site/4site-pro/project4site_-github-readme-to-site-generator/node_modules/puppeteer-core/lib/cjs/third_party/mitt/mitt.js:61:20)\n    at CdpFrame.emit (/home/tabs/ae-co-system/project4site/4site-pro/project4site_-github-readme-to-site-generator/node_modules/puppeteer-core/lib/cjs/puppeteer/common/EventEmitter.js:83:23)\n    at #removeFramesRecursively (/home/tabs/ae-co-system/project4site/4site-pro/project4site_-github-readme-to-site-generator/node_modules/puppeteer-core/lib/cjs/puppeteer/cdp/FrameManager.js:455:15)\n    at #onClientDisconnect (/home/tabs/ae-co-system/project4site/4site-pro/project4site_-github-readme-to-site-generator/node_modules/puppeteer-core/lib/cjs/puppeteer/cdp/FrameManager.js:99:42)"
-}
