@@ -9,3 +9,34 @@ __tests__
 coverage
 .env*
 !.env.example
+# Reduce build log size
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.mp4
+*.mov
+*.avi
+# Test and demo files
+*-test.*
+*-demo.*
+test-suite/
+monitoring/
+scripts/
+database/*.sql
+# Documentation
+docs/
+ai-Docs/
+*.bak
+*.backup
+# Dev-only files
+.DS_Store
+Thumbs.db
+# Large files
+*.zip
+*.tar
+*.gz
+bun.lockb
+yarn.lock
+package-lock.json

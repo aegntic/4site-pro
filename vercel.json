@@ -1,9 +1,19 @@
 {
   "version": 2,
   "name": "4site-pro",
-  "buildCommand": "bun run build",
+  "buildCommand": "./vercel-build.sh",
   "outputDirectory": "dist",
   "framework": "vite",
+  "env": {
+    "NODE_ENV": "production",
+    "CI": "true",
+    "DISABLE_LOGGING": "true"
+  },
+  "functions": {
+    "api/*.js": {
+      "maxDuration": 10
+    }
+  },
   "rewrites": [
     {
       "source": "/api/(.*)",
