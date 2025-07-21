@@ -57,6 +57,8 @@
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
     "concurrently": "^8.2.2",
     "nodemon": "^3.0.2",
     "puppeteer": "^24.10.1",
