@@ -53,9 +53,16 @@ export const PolarIntegrationSection: React.FC<PolarIntegrationSectionProps> = (
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <div className=\"flex items-center justify-center gap-4 mb-6\">
-            <img src=\"/4sitepro-logo.png\" alt=\"4site.pro\" className=\"w-12 h-12 rounded-lg\" />
-            <span className=\"text-2xl text-white/60\">×</span>\n            <div className=\"flex items-center gap-2\">\n              <div className=\"w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center\">\n                <span className=\"text-white font-bold text-lg\">P</span>\n              </div>\n              <span className=\"text-xl font-semibold text-white\">Polar.sh</span>\n            </div>\n          </div>
+          <div className="flex items-center justify-center gap-4 mb-6">
+            <img src="/4sitepro-logo.png" alt="4site.pro" className="w-12 h-12 rounded-lg" />
+            <span className="text-2xl text-white/60">×</span>
+            <div className="flex items-center gap-2">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-lg">P</span>
+              </div>
+              <span className="text-xl font-semibold text-white">Polar.sh</span>
+            </div>
+          </div>
           <h2 className="text-4xl md:text-5xl font-light text-white mb-4">
             Powered by <span className="font-medium bg-gradient-to-r from-blue-300 to-purple-400 bg-clip-text text-transparent">Polar.sh</span>
           </h2>
