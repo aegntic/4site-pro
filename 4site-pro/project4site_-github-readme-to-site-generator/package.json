@@ -32,7 +32,11 @@
     "test:parallel": "test-suite/run-tests.sh --parallel",
     "test:headless": "test-suite/run-tests.sh --headless",
     "test:comprehensive": "node test-suite/comprehensive-test-suite.js",
-    "test:ci-integration": "node test-suite/ci-integration.js"
+    "test:ci-integration": "node test-suite/ci-integration.js",
+    "process-repo": "node scripts/process-gitingest.js",
+    "analyze-repo": "npm run process-repo",
+    "gitingest:install": "pip3 install gitingest",
+    "gitingest:analyze": "gitingest"
   },
   "dependencies": {
     "@fal-ai/serverless-client": "^0.14.0",
