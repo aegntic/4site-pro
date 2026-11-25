@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/cover-16x9.jpg" alt="4site-pro — Presentation Intelligence Platform" width="100%" />
+</p>
+
 # project4site 🚀
 
 > **The AI-Powered Presentation Intelligence Platform**  
